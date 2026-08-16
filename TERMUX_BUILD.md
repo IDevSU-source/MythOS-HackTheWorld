@@ -26,6 +26,6 @@ The production profile produces an Android App Bundle (`.aab`) for the Google Pl
 
 ## Signing-key backup
 
-After the first run, the script reports the keystore directory inside the Ubuntu proot. Back up that entire directory before uploading anything to Play. Every later update for the same Android package must use the same upload key.
+After the first run, the script creates `~/MythOS-signing-backup` in Termux and copies the upload keystore plus its password file there. Back up that entire folder to secure storage before uploading anything to Play. Every later update for the same Android package must use the same upload key.
 
 > Do not commit `credentials.json`, the keystore, or the signing folder to GitHub. The repository ignores those files by default.

@@ -39,6 +39,7 @@ APP_DIR="${WORKSPACE}/MythOS-HackTheWorld"
 SECRETS_DIR="${WORKSPACE}/signing"
 KEYSTORE="${SECRETS_DIR}/mythos-upload.jks"
 PASSWORD_FILE="${SECRETS_DIR}/keystore-password.txt"
+TERMUX_BACKUP_DIR="/termux-home/MythOS-signing-backup"
 ALIAS="mythos_upload"
 
 export DEBIAN_FRONTEND=noninteractive
@@ -85,7 +86,12 @@ if [ ! -f "${KEYSTORE}" ]; then
     -keyalg RSA -keysize 4096 -validity 10000 \
     -dname "CN=MythOS Upload, OU=Independent, O=MythOS, L=Local, ST=Local, C=US"
   chmod 600 "${KEYSTORE}"
-  echo "IMPORTANT: Signing files are in ${SECRETS_DIR}. Copy this folder to secure storage before publishing."
+  mkdir -p "${TERMUX_BACKUP_DIR}"
+  cp "${KEYSTORE}" "${PASSWORD_FILE}" "${TERMUX_BACKUP_DIR}/"
+  chmod 700 "${TERMUX_BACKUP_DIR}"
+  chmod 600 "${TERMUX_BACKUP_DIR}"/*
+  echo "IMPORTANT: A backup of your signing files was created at ${TERMUX_BACKUP_DIR}."
+  echo "Copy that folder to secure storage before publishing. Never commit it to GitHub."
 else
   PASSWORD="$(cat "${PASSWORD_FILE}")"
 fi
@@ -127,7 +133,7 @@ fi
 npx --yes eas-cli@latest build --platform android --profile "${PROFILE}"
 
 echo "==> Build request submitted. Open the URL printed above to download the artifact when it finishes."
-echo "==> Keep ${SECRETS_DIR} backed up; it is required for every future update."
+echo "==> Keep ${TERMUX_BACKUP_DIR} backed up; it is required for every future update."
 PROOT_PAYLOAD
 
 chmod 700 "${PAYLOAD}"
