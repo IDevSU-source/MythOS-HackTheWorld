@@ -6,6 +6,7 @@ set -Eeuo pipefail
 REPOSITORY="https://github.com/IDevSU-source/MythOS-HackTheWorld.git"
 DISTRO="ubuntu"
 PROFILE="${MYTHOS_PROFILE:-preview}"
+EXPO_ACCOUNT="${MYTHOS_EXPO_ACCOUNT:-idevsu}"
 TERMUX_HOME="${HOME}"
 PAYLOAD="${TERMUX_HOME}/.mythos-proot-build.sh"
 
@@ -34,6 +35,7 @@ set -Eeuo pipefail
 
 REPOSITORY="https://github.com/IDevSU-source/MythOS-HackTheWorld.git"
 PROFILE="${1:-preview}"
+EXPO_ACCOUNT="${2:-idevsu}"
 WORKSPACE="${HOME}/mythos-build"
 APP_DIR="${WORKSPACE}/MythOS-HackTheWorld"
 SECRETS_DIR="${WORKSPACE}/signing"
@@ -118,10 +120,7 @@ fi
 
 if ! grep -q "projectId" app.config.ts; then
   echo "==> Creating or linking this source checkout to your Expo project..."
-  if ! npx --yes eas-cli@latest init --non-interactive; then
-    echo "==> EAS needs one interactive project-selection step. Follow its prompt, then rerun this same script."
-    npx --yes eas-cli@latest init
-  fi
+  npx --yes eas-cli@latest init --account "${EXPO_ACCOUNT}" --non-interactive
 fi
 
 echo "==> Starting ${PROFILE} build with the local MythOS signing key..."
@@ -138,4 +137,4 @@ PROOT_PAYLOAD
 
 chmod 700 "${PAYLOAD}"
 echo "==> Starting ${PROFILE} workflow inside Ubuntu proot..."
-proot-distro login --shared-tmp --bind "${TERMUX_HOME}:/termux-home" "${DISTRO}" -- bash "/termux-home/.mythos-proot-build.sh" "${PROFILE}"
+proot-distro login --shared-tmp --bind "${TERMUX_HOME}:/termux-home" "${DISTRO}" -- bash "/termux-home/.mythos-proot-build.sh" "${PROFILE}" "${EXPO_ACCOUNT}"

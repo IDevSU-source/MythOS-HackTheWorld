@@ -12,7 +12,7 @@ Paste this into the official Termux app:
 pkg update -y && pkg install -y curl && curl -fsSL https://raw.githubusercontent.com/IDevSU-source/MythOS-HackTheWorld/main/scripts/termux-mythos-build.sh | bash
 ```
 
-The first run installs Ubuntu proot, Node, Java, and project dependencies. It will ask you to authenticate to Expo once in that proot environment. The default **preview** profile produces an installable APK.
+The first run installs Ubuntu proot, Node, Java, and project dependencies. It will ask you to authenticate to Expo once in that proot environment. The script explicitly creates or links the build under the **idevsu** Expo account; set `MYTHOS_EXPO_ACCOUNT=another-account-name` before the command only if you deliberately want a different owner. The default **preview** profile produces an installable APK.
 
 ## Google Play build: AAB
 

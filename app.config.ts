@@ -41,6 +41,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
+  owner: "idevsu",
   version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
