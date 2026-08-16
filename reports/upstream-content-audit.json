@@ -1,0 +1,541 @@
+{
+  "generatedAt": "2026-08-16T08:19:37.759Z",
+  "upstreamCommit": "77dae99",
+  "app": {
+    "chapters": 45,
+    "devlogs": 39,
+    "lexiconEntries": 177,
+    "chapterCharacters": 24153,
+    "shortChaptersUnder1500Characters": [
+      {
+        "id": "00_directory_structure",
+        "title": "INTRODUCTION",
+        "characters": 603
+      },
+      {
+        "id": "01_waking_up",
+        "title": "0.1 Waking Up in the Flux",
+        "characters": 603
+      },
+      {
+        "id": "02_system_dependecies",
+        "title": "0.2 System Dependencies (The Tech Stack)",
+        "characters": 603
+      },
+      {
+        "id": "03_EULA",
+        "title": "0.3 ⚠️ WARNING: NO \"SAFE MODE\" INCLUDED",
+        "characters": 601
+      },
+      {
+        "id": "04_lineage",
+        "title": "0.4 Lineage Acknowledgement: Honoring the Open Source Contributors",
+        "characters": 603
+      },
+      {
+        "id": "05_kernel_specs",
+        "title": "0.5 The Kernel Specs (Four Axioms)",
+        "characters": 603
+      },
+      {
+        "id": "06_theory_vs_practice",
+        "title": "0.6 Theory vs. Practice",
+        "characters": 603
+      },
+      {
+        "id": "07_user_role",
+        "title": "0.7 The User Role: White Hat Hacker",
+        "characters": 603
+      },
+      {
+        "id": "08_meta_structure",
+        "title": "0.8 The Meta-Structure (Fractal Architecture)",
+        "characters": 603
+      },
+      {
+        "id": "09_system_configuration",
+        "title": "0.9 System Configuration: The Rosetta Stone",
+        "characters": 603
+      },
+      {
+        "id": "00_diagnostic",
+        "title": "PART 1: THE DIAGNOSTIC (System Analysis)",
+        "characters": 603
+      },
+      {
+        "id": "ch00_system_roadmap",
+        "title": "System Roadmap: The Installation Wizard",
+        "characters": 601
+      },
+      {
+        "id": "ch01_00_physics_engine",
+        "title": "CHAPTER 1: THE PHYSICS ENGINE",
+        "characters": 599
+      },
+      {
+        "id": "ch01_01_system_specs",
+        "title": "1.1 System Specs: The Refresh Rate",
+        "characters": 603
+      },
+      {
+        "id": "ch01_02_hardware_specs",
+        "title": "1.2 The Avatar: Hardware and Input Ports",
+        "characters": 603
+      },
+      {
+        "id": "ch01_03_three_signatures",
+        "title": "1.3 The Three Signatures",
+        "characters": 603
+      },
+      {
+        "id": "ch01_04_hardcore_ethos",
+        "title": "1.4 The Hardcore Ethos: The Map is Not the Territory",
+        "characters": 601
+      },
+      {
+        "id": "ch01_05_checkpoint01",
+        "title": "📍CHECKPOINT 1: STREAM ANALYSIS",
+        "characters": 601
+      },
+      {
+        "id": "ch02_00_render_engine",
+        "title": "CHAPTER 2: THE RENDER ENGINE",
+        "characters": 603
+      },
+      {
+        "id": "ch02_01_data_handshake",
+        "title": "2.1 The Data Handshake",
+        "characters": 601
+      },
+      {
+        "id": "ch02_02_gui",
+        "title": "2.2 The GUI (Concepts vs. Reality)",
+        "characters": 600
+      },
+      {
+        "id": "ch02_03_algorithm",
+        "title": "2.3 The Algorithm (Karma as Conditional Logic)",
+        "characters": 601
+      },
+      {
+        "id": "ch02_04_checkpoint02",
+        "title": "📍 CHECKPOINT 2: SPOTTING LAG",
+        "characters": 598
+      },
+      {
+        "id": "ch03_00_rootkit",
+        "title": "CHAPTER 3: THE SELF ROOTKIT",
+        "characters": 603
+      },
+      {
+        "id": "ch03_01_infinite_loop",
+        "title": "3.1 The Infinite Loop",
+        "characters": 599
+      },
+      {
+        "id": "ch03_02_idle_process",
+        "title": "3.2 The Idle Process",
+        "characters": 599
+      },
+      {
+        "id": "x00_diagnostic_complete",
+        "title": "END OF PART 1: THE DIAGNOSTIC COMPLETE",
+        "characters": 603
+      },
+      {
+        "id": "00_code",
+        "title": "PART 2: THE CODE (Execution)",
+        "characters": 599
+      },
+      {
+        "id": "ch04_00_firewall",
+        "title": "CHAPTER 4: THE FIREWALL (SILA & ETHICS)",
+        "characters": 603
+      },
+      {
+        "id": "ch04_01_user_permissions",
+        "title": "4.1 User Permissions: White Hat vs. Black Hat",
+        "characters": 603
+      },
+      {
+        "id": "ch04_02_network_security",
+        "title": "4.2 Network Security",
+        "characters": 603
+      },
+      {
+        "id": "ch05_00_overclock",
+        "title": "CHAPTER 5: THE OVERCLOCK",
+        "characters": 603
+      },
+      {
+        "id": "ch05_01_overclock_boost",
+        "title": "5.1 Overclock: Boosting System Clock Speed (Samadhi)",
+        "characters": 601
+      },
+      {
+        "id": "ch05_02_staging_environment",
+        "title": "5.2 The Staging Environment (Beware the Dev Tools)",
+        "characters": 603
+      },
+      {
+        "id": "ch05_03_checkpoint03",
+        "title": "📍 CHECKPOINT 3: THE OVERCLOCK (God Mode)",
+        "characters": 604
+      },
+      {
+        "id": "ch06_00_toolkit",
+        "title": "Chapter 6: The Toolkit (System Utilities)",
+        "characters": 603
+      },
+      {
+        "id": "ch06_01_toolkit1_rapid_noting",
+        "title": "Chapter06 01 Toolkit1 Rapid Noting",
+        "characters": 235
+      },
+      {
+        "id": "ch06_02_toolkit2_haptic_feedback 2",
+        "title": "Chapter06 02 Toolkit2 Haptic Feedback 2",
+        "characters": 235
+      },
+      {
+        "id": "ch06_03_toolkit3_gone",
+        "title": "Chapter06 03 Toolkit3 Gone",
+        "characters": 235
+      },
+      {
+        "id": "ch06_04_checkpoint04",
+        "title": "Chapter06 04 Chaptereckpoint04",
+        "characters": 235
+      },
+      {
+        "id": "00_patch",
+        "title": "00 Patchapter",
+        "characters": 235
+      },
+      {
+        "id": "ch07_01_zero_lag",
+        "title": "Chapter07 01 Zero Lag",
+        "characters": 235
+      },
+      {
+        "id": "ch07_02_checkpoint05",
+        "title": "Chapter07 02 Chaptereckpoint05",
+        "characters": 235
+      },
+      {
+        "id": "ch07_03_checkpoint06",
+        "title": "CHECKPOINT 06: THE REBOOT",
+        "characters": 602
+      },
+      {
+        "id": "ch08_01_integration",
+        "title": "Chapter08 01 Integration",
+        "characters": 235
+      }
+    ]
+  },
+  "upstream": {
+    "chapterFiles": 59,
+    "chapterCharacters": 290515,
+    "chapters": [
+      {
+        "file": "src/00_introduction/00_directory_structure.md",
+        "title": "INTRODUCTION",
+        "characters": 4929
+      },
+      {
+        "file": "src/00_introduction/01_waking_up.md",
+        "title": "0.1 Waking Up in the Flux",
+        "characters": 3097
+      },
+      {
+        "file": "src/00_introduction/02_system_dependecies.md",
+        "title": "0.2 System Dependencies (The Tech Stack)",
+        "characters": 3360
+      },
+      {
+        "file": "src/00_introduction/03_EULA.md",
+        "title": "0.3 ⚠️ WARNING: NO \"SAFE MODE\" INCLUDED",
+        "characters": 3267
+      },
+      {
+        "file": "src/00_introduction/04_lineage.md",
+        "title": "0.4 Lineage Acknowledgement: Honoring the Open Source Contributors",
+        "characters": 4886
+      },
+      {
+        "file": "src/00_introduction/05_kernel_specs.md",
+        "title": "0.5 The Kernel Specs (Four Axioms)",
+        "characters": 4116
+      },
+      {
+        "file": "src/00_introduction/06_theory_vs_practice.md",
+        "title": "0.6 Theory vs. Practice",
+        "characters": 3953
+      },
+      {
+        "file": "src/00_introduction/07_user_role.md",
+        "title": "0.7 The User Role: White Hat Hacker",
+        "characters": 1277
+      },
+      {
+        "file": "src/00_introduction/08_meta_structure.md",
+        "title": "0.8 The Meta-Structure (Fractal Architecture)",
+        "characters": 1571
+      },
+      {
+        "file": "src/00_introduction/09_system_configuration.md",
+        "title": "0.9 System Configuration: The Rosetta Stone",
+        "characters": 5366
+      },
+      {
+        "file": "src/01_diagnostic/00_diagnostic.md",
+        "title": "PART 1: THE DIAGNOSTIC (System Analysis)",
+        "characters": 2596
+      },
+      {
+        "file": "src/01_diagnostic/ch00_system_roadmap.md",
+        "title": "System Roadmap: The Installation Wizard",
+        "characters": 8805
+      },
+      {
+        "file": "src/01_diagnostic/ch01_00_physics_engine.md",
+        "title": "CHAPTER 1: THE PHYSICS ENGINE",
+        "characters": 4953
+      },
+      {
+        "file": "src/01_diagnostic/ch01_01_system_specs.md",
+        "title": "1.1 System Specs: The Refresh Rate",
+        "characters": 6437
+      },
+      {
+        "file": "src/01_diagnostic/ch01_02_hardware_specs.md",
+        "title": "1.2 The Avatar: Hardware and Input Ports",
+        "characters": 3529
+      },
+      {
+        "file": "src/01_diagnostic/ch01_03_three_signatures.md",
+        "title": "1.3 The Three Signatures",
+        "characters": 3051
+      },
+      {
+        "file": "src/01_diagnostic/ch01_04_hardcore_ethos.md",
+        "title": "1.4 The Hardcore Ethos: The Map is Not the Territory",
+        "characters": 3656
+      },
+      {
+        "file": "src/01_diagnostic/ch01_05_checkpoint01.md",
+        "title": "📍CHECKPOINT 1: STREAM ANALYSIS",
+        "characters": 10442
+      },
+      {
+        "file": "src/01_diagnostic/ch02_00_render_engine.md",
+        "title": "CHAPTER 2: THE RENDER ENGINE",
+        "characters": 2259
+      },
+      {
+        "file": "src/01_diagnostic/ch02_01_data_handshake.md",
+        "title": "2.1 The Data Handshake",
+        "characters": 5916
+      },
+      {
+        "file": "src/01_diagnostic/ch02_02_gui.md",
+        "title": "2.2 The GUI (Concepts vs. Reality)",
+        "characters": 4130
+      },
+      {
+        "file": "src/01_diagnostic/ch02_03_algorithm.md",
+        "title": "2.3 The Algorithm (Karma as Conditional Logic)",
+        "characters": 3315
+      },
+      {
+        "file": "src/01_diagnostic/ch02_04_checkpoint02.md",
+        "title": "📍 CHECKPOINT 2: SPOTTING LAG",
+        "characters": 5543
+      },
+      {
+        "file": "src/01_diagnostic/ch03_00_rootkit.md",
+        "title": "CHAPTER 3: THE SELF ROOTKIT",
+        "characters": 3622
+      },
+      {
+        "file": "src/01_diagnostic/ch03_01_infinite_loop.md",
+        "title": "3.1 The Infinite Loop",
+        "characters": 2409
+      },
+      {
+        "file": "src/01_diagnostic/ch03_02_idle_process.md",
+        "title": "3.2 The Idle Process",
+        "characters": 1662
+      },
+      {
+        "file": "src/01_diagnostic/x00_diagnostic_complete.md",
+        "title": "END OF PART 1: THE DIAGNOSTIC COMPLETE",
+        "characters": 704
+      },
+      {
+        "file": "src/02_code/00_code.md",
+        "title": "PART 2: THE CODE (Execution)",
+        "characters": 3892
+      },
+      {
+        "file": "src/02_code/ch04_00_firewall.md",
+        "title": "CHAPTER 4: THE FIREWALL (SILA & ETHICS)",
+        "characters": 2998
+      },
+      {
+        "file": "src/02_code/ch04_01_user_permissions.md",
+        "title": "4.1 User Permissions: White Hat vs. Black Hat",
+        "characters": 9622
+      },
+      {
+        "file": "src/02_code/ch04_02_network_security.md",
+        "title": "4.2 Network Security",
+        "characters": 6848
+      },
+      {
+        "file": "src/02_code/ch05_00_overclock.md",
+        "title": "CHAPTER 5: THE OVERCLOCK",
+        "characters": 1761
+      },
+      {
+        "file": "src/02_code/ch05_01_overclock_boost.md",
+        "title": "5.1 Overclock: Boosting System Clock Speed (Samadhi)",
+        "characters": 7806
+      },
+      {
+        "file": "src/02_code/ch05_02_staging_environment.md",
+        "title": "5.2 The Staging Environment (Beware the Dev Tools)",
+        "characters": 4067
+      },
+      {
+        "file": "src/02_code/ch05_03_checkpoint03.md",
+        "title": "📍 CHECKPOINT 3: THE OVERCLOCK (God Mode)",
+        "characters": 12037
+      },
+      {
+        "file": "src/02_code/ch06_00_toolkit.md",
+        "title": "Chapter 6: The Toolkit (System Utilities)",
+        "characters": 3666
+      },
+      {
+        "file": "src/02_code/ch06_01_toolkit1_rapid_noting.md",
+        "title": "ch06_01_toolkit1_rapid_noting",
+        "characters": 232
+      },
+      {
+        "file": "src/02_code/ch06_02_toolkit2_haptic_feedback 2.md",
+        "title": "ch06_02_toolkit2_haptic_feedback 2",
+        "characters": 232
+      },
+      {
+        "file": "src/02_code/ch06_03_toolkit3_gone.md",
+        "title": "ch06_03_toolkit3_gone",
+        "characters": 232
+      },
+      {
+        "file": "src/02_code/ch06_04_checkpoint04.md",
+        "title": "ch06_04_checkpoint04",
+        "characters": 232
+      },
+      {
+        "file": "src/03_patch/00_patch.md",
+        "title": "00_patch",
+        "characters": 232
+      },
+      {
+        "file": "src/03_patch/ch07_01_zero_lag.md",
+        "title": "ch07_01_zero_lag",
+        "characters": 232
+      },
+      {
+        "file": "src/03_patch/ch07_02_checkpoint05.md",
+        "title": "ch07_02_checkpoint05",
+        "characters": 232
+      },
+      {
+        "file": "src/03_patch/ch07_03_checkpoint06.md",
+        "title": "CHECKPOINT 06: THE REBOOT",
+        "characters": 896
+      },
+      {
+        "file": "src/03_patch/ch08_01_integration.md",
+        "title": "ch08_01_integration",
+        "characters": 232
+      },
+      {
+        "file": "src/04_personal_codex/00_personal_codex.md",
+        "title": "00_personal_codex",
+        "characters": 232
+      },
+      {
+        "file": "src/04_personal_codex/ch09_01_author_log.md",
+        "title": "ch09_01_author_log",
+        "characters": 232
+      },
+      {
+        "file": "src/04_personal_codex/ch09_02_devlogs.md",
+        "title": "9.2 Dev Logs (Archive)",
+        "characters": 1434
+      },
+      {
+        "file": "src/04_personal_codex/ch10_00_silicon_sutra_detour.md",
+        "title": "CHAPTER 10: THE SILICON SUTRA (THE ALIGNMENT DETOUR)",
+        "characters": 2333
+      },
+      {
+        "file": "src/04_personal_codex/ch10_01_devlog015.md",
+        "title": "10.1 Devlog 015: Sledgehammers & Swarms",
+        "characters": 1681
+      },
+      {
+        "file": "src/04_personal_codex/ch10_02_executive_summary.md",
+        "title": "10.2 Executive Summary: The Quad-Core Kernel",
+        "characters": 6027
+      },
+      {
+        "file": "src/04_personal_codex/ch10_03_white_paper.md",
+        "title": "10.3 The White Paper v1.0",
+        "characters": 34985
+      },
+      {
+        "file": "src/04_personal_codex/ch10_04_redteam_debate.md",
+        "title": "10.4 The Red-Team Debate",
+        "characters": 25726
+      },
+      {
+        "file": "src/04_personal_codex/ch10_05_devlog016.md",
+        "title": "10.5 Devlog 016: Agents of Chaos vs. Silicon Sutra",
+        "characters": 3707
+      },
+      {
+        "file": "src/04_personal_codex/ch10_06_system_reboot.md",
+        "title": "10.6 System Reboot: Return to Root",
+        "characters": 901
+      },
+      {
+        "file": "src/04_personal_codex/ch14_00_UltimateHackersProtocol.md",
+        "title": "Chapter 14: Side Quest V (Why the TPS Protocol is the Ultimate Hacker's Protocol)",
+        "characters": 4368
+      },
+      {
+        "file": "src/04_personal_codex/ch15_00_TPS0.md",
+        "title": "Chapter 15: Side Quest VI (TPS Protocol Zero)",
+        "characters": 4125
+      },
+      {
+        "file": "src/alignment/TPS_SiliconSutraWhitePaper_ES.md",
+        "title": "EXECUTIVE SUMMARY: THERMODYNAMIC ALIGNMENT IN MULTI-AGENT SYSTEMS v1.0",
+        "characters": 6157
+      },
+      {
+        "file": "src/alignment/TPS_SiliconSutraWhitePaper_v1.md",
+        "title": "THE SILICON SUTRA: THERMODYNAMIC ALIGNMENT IN MULTI-AGENT SYSTEMS v1.0",
+        "characters": 34307
+      }
+    ],
+    "devlogs": 39,
+    "infographics": 52,
+    "lexiconHeadings": 14
+  }
+}

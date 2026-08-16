@@ -1,314 +1,182 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, ScrollView, Pressable, StyleSheet, Platform,
-  Animated, Modal
-} from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Platform, Modal, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+
 import { ScreenContainer } from '@/components/screen-container';
 import { useProgress } from '@/lib/progress-context';
-import { CHAPTERS, LEXICON } from '@/lib/tps-data';
-import { parseMarkdownToSections } from '@/lib/content-parser';
+import { CHAPTERS, PARTS } from '@/lib/tps-data';
+import { parseMarkdownToSections, type ContentSection } from '@/lib/content-parser';
+import { getInfographicAsset } from '@/lib/infographics';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import * as Haptics from 'expo-haptics';
 
 const C = {
   bg: '#0A0E1A', surface: '#111827', surface2: '#1A2236',
-  primary: '#00FF88', secondary: '#00D4FF', accent: '#FF6B35',
-  text: '#E2E8F0', muted: '#64748B', border: '#1E293B',
+  primary: '#00FF88', secondary: '#00D4FF', accent: '#FFB454',
+  text: '#E2E8F0', muted: '#8B9BB4', border: '#26334B', warning: '#F87171',
 };
 
-const PART_COLORS = ['#00D4FF', '#00FF88', '#FBBF24', '#FF6B35'];
+const PART_COLORS = ['#00D4FF', '#00FF88', '#FBBF24', '#FF8C42', '#C084FC', '#60A5FA', '#F472B6'];
 
-function XPPopup({ xp, badge, onDone }: { xp: number; badge?: string; onDone: () => void }) {
-  const scale = useRef(new Animated.Value(0.5)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 12 }),
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  return (
-    <Modal visible transparent animationType="none">
-      <View style={styles.popupOverlay}>
-        <Animated.View style={[styles.popupCard, { transform: [{ scale }], opacity }]}>
-          <Text style={styles.popupEmoji}>⚡</Text>
-          <Text style={styles.popupTitle}>PATCH APPLIED</Text>
-          <Text style={styles.popupXP}>+{xp} XP</Text>
-          {badge && (
-            <View style={styles.popupBadge}>
-              <Text style={styles.popupBadgeText}>🏆 New Badge Unlocked!</Text>
-            </View>
-          )}
-          <Pressable style={styles.popupBtn} onPress={onDone}>
-            <Text style={styles.popupBtnText}>CONTINUE &gt;</Text>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
-
-function TermBlock({ content }: { content: string }) {
-  // Render inline TPS terms with highlight
-  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+function InlineText({ content }: { content: string }) {
+  const chunks = content.split(/(\*\*[^*]+\*\*)/g);
   return (
     <Text style={styles.bodyText}>
-      {parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          const term = part.slice(2, -2);
-          return <Text key={i} style={styles.highlightTerm}>{term}</Text>;
-        }
-        return <Text key={i}>{part}</Text>;
-      })}
+      {chunks.map((chunk, index) =>
+        chunk.startsWith('**') && chunk.endsWith('**')
+          ? <Text key={index} style={styles.highlight}>{chunk.slice(2, -2)}</Text>
+          : <Text key={index}>{chunk}</Text>,
+      )}
     </Text>
   );
 }
 
-function renderSection(section: { type: string; content?: string; items?: string[]; title?: string; left?: string; right?: string }, idx: number) {
-  switch (section.type) {
-    case 'heading':
-      return <Text key={idx} style={styles.heading}>{section.content}</Text>;
-    case 'subheading':
-      return <Text key={idx} style={styles.subheading}>{section.content}</Text>;
-    case 'body':
-      return <TermBlock key={idx} content={section.content ?? ''} />;
-    case 'quote':
-      return (
-        <View key={idx} style={styles.quoteBlock}>
-          <Text style={styles.quoteText}>"{section.content}"</Text>
-        </View>
-      );
-    case 'code':
-      return (
-        <View key={idx} style={styles.codeBlock}>
-          <Text style={styles.codeText}>{section.content}</Text>
-        </View>
-      );
-    case 'list':
-      return (
-        <View key={idx} style={styles.listBlock}>
-          {(section.items ?? []).map((item, j) => (
-            <View key={j} style={styles.listItem}>
-              <Text style={styles.listBullet}>▸</Text>
-              <TermBlock content={item} />
-            </View>
-          ))}
-        </View>
-      );
-    case 'analogy':
-      return (
-        <View key={idx} style={styles.analogyBlock}>
-          <Text style={styles.analogyLabel}>ANALOGY</Text>
-          <Text style={styles.analogyText}>{section.content}</Text>
-        </View>
-      );
-    case 'warning':
-      return (
-        <View key={idx} style={styles.warningBlock}>
-          <Text style={styles.warningLabel}>⚠ WARNING</Text>
-          <Text style={styles.warningText}>{section.content}</Text>
-        </View>
-      );
-    case 'comparison':
-      return (
-        <View key={idx} style={styles.comparisonBlock}>
-          <View style={styles.comparisonSide}>
-            <Text style={styles.comparisonLabel}>LEGACY</Text>
-            <Text style={styles.comparisonText}>{section.left}</Text>
-          </View>
-          <Text style={styles.comparisonArrow}>→</Text>
-          <View style={styles.comparisonSide}>
-            <Text style={[styles.comparisonLabel, { color: C.primary }]}>TPS</Text>
-            <Text style={[styles.comparisonText, { color: C.primary }]}>{section.right}</Text>
-          </View>
-        </View>
-      );
-    default:
-      return null;
+function RenderSection({ section }: { section: ContentSection }) {
+  if (section.type === 'heading') return <Text style={styles.heading}>{section.content}</Text>;
+  if (section.type === 'subheading') return <Text style={styles.subheading}>{section.content}</Text>;
+  if (section.type === 'body') return <InlineText content={section.content} />;
+  if (section.type === 'quote') {
+    return <View style={styles.quote}><Text style={styles.quoteText}>{section.content}</Text></View>;
   }
+  if (section.type === 'code') {
+    return <View style={styles.code}><Text style={styles.codeText}>{section.content}</Text></View>;
+  }
+  if (section.type === 'list') {
+    return (
+      <View style={styles.list}>
+        {section.items.map((item, index) => (
+          <View key={`${item}-${index}`} style={styles.listRow}>
+            <Text style={styles.bullet}>▸</Text>
+            <View style={styles.listCopy}><InlineText content={item} /></View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  if (section.type === 'table') {
+    return (
+      <View style={styles.table}>
+        {section.headers.map((header, index) => <Text key={`${header}-${index}`} style={styles.tableHeader}>{header}</Text>)}
+        {section.rows.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.tableRow}>
+            {row.map((cell, cellIndex) => <Text key={`cell-${cellIndex}`} style={styles.tableCell}>{cell}</Text>)}
+          </View>
+        ))}
+      </View>
+    );
+  }
+  if (section.type === 'image') {
+    const asset = getInfographicAsset(section.assetName);
+    return asset ? (
+      <View style={styles.visualReference}>
+        <Image source={asset} style={styles.visualImage} resizeMode="contain" accessibilityLabel={section.alt || section.assetName} />
+        <Text style={styles.visualCopy}>{section.alt || section.assetName}</Text>
+      </View>
+    ) : <View style={styles.visualReference}><Text style={styles.visualLabel}>SOURCE VISUAL</Text><Text style={styles.visualCopy}>{section.alt || section.assetName}</Text></View>;
+  }
+  return null;
 }
 
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { progress, completeChapterAction, isChapterUnlockedFn } = useProgress();
+  const [completion, setCompletion] = useState<{ xp: number; badge?: string } | null>(null);
 
-  const chapter = CHAPTERS.find(c => c.id === id);
-  const isCompleted = progress.completedChapters.includes(id ?? '');
-  const isUnlocked = isChapterUnlockedFn(id ?? '');
-
-  const [showPopup, setShowPopup] = useState(false);
-  const [popupData, setPopupData] = useState<{ xp: number; badge?: string } | null>(null);
+  const chapter = CHAPTERS.find((item) => item.id === id);
+  const chapterIndex = chapter ? CHAPTERS.indexOf(chapter) : -1;
+  const nextChapter = chapterIndex >= 0 ? CHAPTERS[chapterIndex + 1] : undefined;
+  const isCompleted = Boolean(id && progress.completedChapters.includes(id));
+  const isUnlocked = Boolean(id && isChapterUnlockedFn(id));
+  const sections = useMemo(() => chapter ? parseMarkdownToSections(chapter.content) : [], [chapter]);
 
   if (!chapter) {
     return (
-      <ScreenContainer>
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Chapter not found</Text>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backBtnText}>← BACK</Text>
-          </Pressable>
-        </View>
-      </ScreenContainer>
+      <ScreenContainer><View style={styles.center}><Text style={styles.error}>Module not found.</Text></View></ScreenContainer>
     );
   }
 
-  const partColor = PART_COLORS[chapter.part] ?? C.primary;
-  const chapterIdx = CHAPTERS.findIndex(c => c.id === id);
-  const nextChapter = CHAPTERS[chapterIdx + 1];
+  const part = PARTS.find((item) => item.id === chapter.part);
+  const partColor = PART_COLORS[chapter.part] || C.primary;
 
-  const handleComplete = async () => {
+  const complete = async () => {
+    if (!isUnlocked) return;
     if (isCompleted) {
       if (nextChapter) router.push(`/chapter/${nextChapter.id}` as any);
-      else router.push('/(tabs)/map' as any);
+      else router.push('/(tabs)/profile' as any);
       return;
     }
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-    const result = await completeChapterAction(id ?? '');
-    setPopupData({ xp: result.xpGained, badge: result.newBadges[0] });
-    setShowPopup(true);
-  };
-
-  const handlePopupDone = () => {
-    setShowPopup(false);
-    if (nextChapter) {
-      router.push(`/chapter/${nextChapter.id}` as any);
-    } else {
-      router.push('/(tabs)/map' as any);
-    }
+    if (Platform.OS !== 'web') await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const result = await completeChapterAction(chapter.id);
+    setCompletion({ xp: result.xpGained, badge: result.newBadges[0] });
   };
 
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
-      {/* Top Nav */}
-      <View style={styles.topNav}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="arrow.left" size={20} color={C.text} />
-        </Pressable>
-        <View style={styles.navCenter}>
-          <Text style={[styles.navPart, { color: partColor }]}>PART {chapter.part + 1}</Text>
-          <Text style={styles.navChapter}>CH {CHAPTERS.indexOf(chapter) + 1}</Text>
+      <View style={styles.nav}>
+        <Pressable onPress={() => router.back()} style={styles.back}><IconSymbol name="arrow.left" size={20} color={C.text} /></Pressable>
+        <View style={styles.navTitle}>
+          <Text style={[styles.navPart, { color: partColor }]}>{part?.title.toUpperCase() || 'SOURCE MODULE'}</Text>
+          <Text style={styles.navModule}>MODULE {chapterIndex + 1} OF {CHAPTERS.length}</Text>
         </View>
-        <View style={[styles.xpBadge, { borderColor: partColor + '44' }]}>
-          <Text style={[styles.xpBadgeText, { color: partColor }]}>+{chapter.xpReward} XP</Text>
-        </View>
+        <View style={[styles.xpChip, { borderColor: `${partColor}66` }]}><Text style={[styles.xpChipText, { color: partColor }]}>+{chapter.xpReward} XP</Text></View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Chapter Header */}
-        <View style={[styles.chapterHeader, { borderLeftColor: partColor }]}>
-          <Text style={styles.chapterTitle}>{chapter.title}</Text>
-          {chapter.tagline && (
-            <Text style={[styles.tagline, { color: partColor }]}>{chapter.tagline}</Text>
-          )}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={[styles.hero, { borderLeftColor: partColor }]}>
+          <Text style={styles.title}>{chapter.title}</Text>
+          {!!chapter.tagline && <Text style={[styles.tagline, { color: partColor }]}>{chapter.tagline}</Text>}
+          <Text style={styles.source}>SOURCE: {chapter.sourcePath}</Text>
         </View>
 
-        {/* Content Sections */}
-        {(chapter.sections ?? parseMarkdownToSections(chapter.content)).map((section, idx) => renderSection(section as any, idx))}
+        {sections.map((section, index) => <RenderSection key={`${section.type}-${index}`} section={section} />)}
 
-        {/* Key Terms */}
-        {chapter.keyTerms && chapter.keyTerms.length > 0 && (
-          <View style={styles.keyTermsBlock}>
-            <Text style={styles.keyTermsTitle}>&gt; KEY TERMS</Text>
-            <View style={styles.keyTermsGrid}>
-              {chapter.keyTerms.map(termId => {
-                const entry = LEXICON.find(l => l.id === termId);
-                if (!entry) return null;
-                return (
-                  <View key={termId} style={styles.keyTermChip}>
-                    <Text style={styles.keyTermText}>{entry.tpsTerm}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Complete Button */}
         <Pressable
+          disabled={!isUnlocked}
+          onPress={complete}
           style={({ pressed }) => [
-            styles.completeBtn,
+            styles.complete,
             { backgroundColor: isCompleted ? C.surface2 : partColor },
-            pressed && { opacity: 0.85 },
+            !isUnlocked && styles.disabled,
+            pressed && isUnlocked && { opacity: 0.82 },
           ]}
-          onPress={handleComplete}
         >
-          <Text style={[styles.completeBtnText, { color: isCompleted ? C.muted : C.bg }]}>
-            {isCompleted ? '✓ COMPLETED — NEXT CHAPTER >' : '> MARK AS COMPLETE & EARN XP'}
+          <Text style={[styles.completeText, { color: isCompleted || !isUnlocked ? C.muted : C.bg }]}>
+            {isCompleted ? (nextChapter ? 'COMPLETED — OPEN NEXT MODULE' : 'COMPLETED — VIEW YOUR PROGRESS') : isUnlocked ? 'MARK MODULE COMPLETE & EARN XP' : 'COMPLETE THE PREVIOUS MODULE TO UNLOCK'}
           </Text>
         </Pressable>
-
-        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {showPopup && popupData && (
-        <XPPopup xp={popupData.xp} badge={popupData.badge} onDone={handlePopupDone} />
-      )}
+      <Modal visible={Boolean(completion)} transparent animationType="fade" onRequestClose={() => setCompletion(null)}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalIcon}>⚡</Text>
+            <Text style={styles.modalTitle}>MODULE RECORDED</Text>
+            <Text style={styles.modalXp}>+{completion?.xp || 0} XP</Text>
+            {!!completion?.badge && <Text style={styles.modalBadge}>Badge unlocked</Text>}
+            <Pressable style={styles.modalButton} onPress={() => { setCompletion(null); if (nextChapter) router.push(`/chapter/${nextChapter.id}` as any); else router.push('/(tabs)/profile' as any); }}>
+              <Text style={styles.modalButtonText}>{nextChapter ? 'CONTINUE' : 'VIEW PROGRESS'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  topNav: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.border },
-  backButton: { padding: 4, marginRight: 12 },
-  navCenter: { flex: 1 },
-  navPart: { fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1 },
-  navChapter: { color: C.muted, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  xpBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, backgroundColor: 'transparent' },
-  xpBadgeText: { fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700' },
-  scroll: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { padding: 20 },
-  chapterHeader: { borderLeftWidth: 3, paddingLeft: 16, marginBottom: 24 },
-  checkpointLabel: { fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1, marginBottom: 6 },
-  chapterTitle: { color: C.text, fontSize: 24, fontWeight: '700', lineHeight: 30, marginBottom: 6 },
-  chapterSubtitle: { color: C.muted, fontSize: 14, lineHeight: 20, marginBottom: 8 },
-  tagline: { fontSize: 13, fontStyle: 'italic', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  heading: { color: C.secondary, fontSize: 18, fontWeight: '700', marginTop: 24, marginBottom: 10 },
-  subheading: { color: C.text, fontSize: 15, fontWeight: '700', marginTop: 16, marginBottom: 8 },
-  bodyText: { color: C.text, fontSize: 15, lineHeight: 24, marginBottom: 14 },
-  highlightTerm: { color: C.primary, fontWeight: '700' },
-  quoteBlock: { borderLeftWidth: 3, borderLeftColor: C.secondary, paddingLeft: 16, marginVertical: 16, backgroundColor: C.surface2, padding: 14, borderRadius: 8 },
-  quoteText: { color: C.secondary, fontSize: 15, fontStyle: 'italic', lineHeight: 22 },
-  codeBlock: { backgroundColor: C.surface2, borderRadius: 8, padding: 14, marginVertical: 12, borderWidth: 1, borderColor: C.border },
-  codeText: { color: C.primary, fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', lineHeight: 20 },
-  listBlock: { marginVertical: 12, gap: 8 },
-  listItem: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  listBullet: { color: C.primary, fontSize: 14, marginTop: 4 },
-  analogyBlock: { backgroundColor: C.surface, borderRadius: 10, padding: 14, marginVertical: 12, borderWidth: 1, borderColor: C.accent + '44' },
-  analogyLabel: { color: C.accent, fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1, marginBottom: 6 },
-  analogyText: { color: C.text, fontSize: 14, lineHeight: 21 },
-  warningBlock: { backgroundColor: '#F87171' + '11', borderRadius: 10, padding: 14, marginVertical: 12, borderWidth: 1, borderColor: '#F87171' + '44' },
-  warningLabel: { color: '#F87171', fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1, marginBottom: 6 },
-  warningText: { color: C.text, fontSize: 14, lineHeight: 21 },
-  comparisonBlock: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 12, backgroundColor: C.surface, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: C.border },
-  comparisonSide: { flex: 1 },
-  comparisonLabel: { color: C.muted, fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1, marginBottom: 4 },
-  comparisonText: { color: C.muted, fontSize: 13, lineHeight: 18 },
-  comparisonArrow: { color: C.primary, fontSize: 18, fontWeight: '700' },
-  keyTermsBlock: { marginTop: 24, marginBottom: 12, backgroundColor: C.surface, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: C.border },
-  keyTermsTitle: { color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 1, marginBottom: 10 },
-  keyTermsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  keyTermChip: { backgroundColor: C.primary + '22', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: C.primary + '44' },
-  keyTermText: { color: C.primary, fontSize: 12, fontWeight: '600' },
-  completeBtn: { borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 24 },
-  completeBtnText: { fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 0.5 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText: { color: C.muted, fontSize: 16, marginBottom: 16 },
-  backBtn: { padding: 12 },
-  backBtnText: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  // Popup
-  popupOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center' },
-  popupCard: { backgroundColor: C.surface, borderRadius: 20, padding: 32, alignItems: 'center', borderWidth: 2, borderColor: C.primary, minWidth: 260 },
-  popupEmoji: { fontSize: 48, marginBottom: 12 },
-  popupTitle: { color: C.primary, fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
-  popupXP: { color: C.text, fontSize: 36, fontWeight: '700', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginBottom: 16 },
-  popupBadge: { backgroundColor: C.accent + '22', borderRadius: 10, padding: 10, marginBottom: 16, borderWidth: 1, borderColor: C.accent },
-  popupBadgeText: { color: C.accent, fontSize: 13, fontWeight: '700' },
-  popupBtn: { backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 28, paddingVertical: 12 },
-  popupBtnText: { color: C.bg, fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700' },
+  nav: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: C.border },
+  back: { padding: 5, marginRight: 10 }, navTitle: { flex: 1 }, navPart: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10, fontWeight: '700', letterSpacing: 1 }, navModule: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10, marginTop: 2 },
+  xpChip: { borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }, xpChipText: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', fontSize: 11 },
+  scroll: { flex: 1, backgroundColor: C.bg }, content: { padding: 20, paddingBottom: 42 },
+  hero: { borderLeftWidth: 3, paddingLeft: 15, marginBottom: 22 }, title: { color: C.text, fontSize: 25, fontWeight: '700', lineHeight: 31, marginBottom: 8 }, tagline: { fontSize: 14, lineHeight: 21, fontStyle: 'italic', marginBottom: 10 }, source: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10 },
+  heading: { color: C.secondary, fontSize: 19, fontWeight: '700', lineHeight: 26, marginTop: 24, marginBottom: 10 }, subheading: { color: C.text, fontSize: 16, fontWeight: '700', lineHeight: 22, marginTop: 18, marginBottom: 8 }, bodyText: { color: C.text, fontSize: 15, lineHeight: 24, marginBottom: 14 }, highlight: { color: C.primary, fontWeight: '700' },
+  quote: { backgroundColor: C.surface2, borderLeftWidth: 3, borderLeftColor: C.secondary, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, marginVertical: 10 }, quoteText: { color: C.secondary, fontSize: 15, lineHeight: 22, fontStyle: 'italic' },
+  code: { backgroundColor: '#080D17', borderWidth: 1, borderColor: C.border, padding: 14, borderRadius: 10, marginVertical: 10 }, codeText: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 13, lineHeight: 20 },
+  list: { marginVertical: 8, gap: 4 }, listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 }, bullet: { color: C.primary, marginTop: 3 }, listCopy: { flex: 1 },
+  table: { borderWidth: 1, borderColor: C.border, borderRadius: 10, overflow: 'hidden', marginVertical: 12 }, tableHeader: { color: C.secondary, fontSize: 12, fontWeight: '700', padding: 11, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.surface2 }, tableRow: { padding: 11, borderBottomWidth: 1, borderBottomColor: C.border }, tableCell: { color: C.text, fontSize: 13, lineHeight: 19, marginBottom: 5 },
+  visualReference: { marginVertical: 12, padding: 10, backgroundColor: C.surface, borderRadius: 10, borderWidth: 1, borderColor: `${C.accent}66` }, visualImage: { width: '100%', height: 260, borderRadius: 7, backgroundColor: '#080D17' }, visualLabel: { color: C.accent, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 6 }, visualCopy: { color: C.text, fontSize: 12, marginTop: 8 },
+  complete: { marginTop: 24, borderRadius: 13, padding: 17, alignItems: 'center' }, disabled: { opacity: 0.45 }, completeText: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 12, fontWeight: '700', textAlign: 'center', letterSpacing: 0.4 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, error: { color: C.warning, fontSize: 16 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.82)', alignItems: 'center', justifyContent: 'center', padding: 24 }, modal: { width: '100%', maxWidth: 320, backgroundColor: C.surface, borderWidth: 1, borderColor: C.primary, borderRadius: 18, padding: 28, alignItems: 'center' }, modalIcon: { fontSize: 42, marginBottom: 10 }, modalTitle: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 1, fontSize: 13, fontWeight: '700' }, modalXp: { color: C.text, fontSize: 34, fontWeight: '700', marginVertical: 10 }, modalBadge: { color: C.accent, fontSize: 13, marginBottom: 16 }, modalButton: { backgroundColor: C.primary, borderRadius: 9, paddingHorizontal: 22, paddingVertical: 12 }, modalButtonText: { color: C.bg, fontWeight: '700', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
 });

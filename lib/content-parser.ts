@@ -1,128 +1,116 @@
-export interface ContentSection {
-  type: 'heading' | 'subheading' | 'body' | 'quote' | 'code' | 'list';
-  content?: string;
-  items?: string[];
+export type ContentSection =
+  | { type: "heading"; content: string }
+  | { type: "subheading"; content: string }
+  | { type: "body"; content: string }
+  | { type: "quote"; content: string }
+  | { type: "code"; content: string }
+  | { type: "list"; items: string[] }
+  | { type: "image"; alt: string; assetName: string }
+  | { type: "table"; headers: string[]; rows: string[][] };
+
+function cleanInline(value: string): string {
+  return value
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+    .replace(/\*\*(.+?)\*\*/g, "**$1**")
+    .trim();
 }
 
-/**
- * Parses raw markdown content from TPS chapters into structured ContentSection arrays
- * for rendering in the interactive chapter reader.
- */
 export function parseMarkdownToSections(markdown: string): ContentSection[] {
   const sections: ContentSection[] = [];
-  const lines = markdown.split('\n');
-  let i = 0;
-  let currentBodyLines: string[] = [];
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  let index = 0;
+  let paragraph: string[] = [];
 
-  const flushBody = () => {
-    if (currentBodyLines.length > 0) {
-      const text = currentBodyLines.join('\n').trim();
-      if (text) {
-        sections.push({ type: 'body', content: text });
-      }
-      currentBodyLines = [];
-    }
+  const flushParagraph = () => {
+    const content = paragraph.join("\n").trim();
+    if (content) sections.push({ type: "body", content: cleanInline(content) });
+    paragraph = [];
   };
 
-  while (i < lines.length) {
-    const line = lines[i];
+  while (index < lines.length) {
+    const line = lines[index];
+    const trimmed = line.trim();
 
-    // Skip horizontal rules
-    if (/^---+$/.test(line.trim())) {
-      flushBody();
-      i++;
+    if (!trimmed || /^-{3,}$/.test(trimmed)) {
+      flushParagraph();
+      index += 1;
       continue;
     }
 
-    // H2 heading
-    if (line.startsWith('## ')) {
-      flushBody();
-      sections.push({ type: 'heading', content: line.slice(3).trim() });
-      i++;
+    const image = trimmed.match(/^!\[([^\]]*)\]\(\/assets\/(?:infographics|images)\/([^\s)]+)\)$/);
+    if (image) {
+      flushParagraph();
+      sections.push({ type: "image", alt: image[1] || "Source illustration", assetName: image[2] });
+      index += 1;
       continue;
     }
 
-    // H3 subheading
-    if (line.startsWith('### ')) {
-      flushBody();
-      sections.push({ type: 'subheading', content: line.slice(4).trim() });
-      i++;
+    const heading = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      sections.push({
+        type: heading[1].length <= 2 ? "heading" : "subheading",
+        content: cleanInline(heading[2]),
+      });
+      index += 1;
       continue;
     }
 
-    // Blockquote → quote
-    if (line.startsWith('> ')) {
-      flushBody();
-      const quoteLines = [];
-      while (i < lines.length && lines[i].startsWith('> ')) {
-        quoteLines.push(lines[i].slice(2));
-        i++;
+    if (trimmed.startsWith("```")) {
+      flushParagraph();
+      const code: string[] = [];
+      index += 1;
+      while (index < lines.length && !lines[index].trim().startsWith("```")) {
+        code.push(lines[index]);
+        index += 1;
       }
-      sections.push({ type: 'quote', content: quoteLines.join(' ').replace(/\*/g, '') });
+      if (index < lines.length) index += 1;
+      sections.push({ type: "code", content: code.join("\n") });
       continue;
     }
 
-    // Code block
-    if (line.startsWith('```')) {
-      flushBody();
-      const codeLines = [];
-      i++; // skip opening ```
-      while (i < lines.length && !lines[i].startsWith('```')) {
-        codeLines.push(lines[i]);
-        i++;
+    if (trimmed.startsWith(">")) {
+      flushParagraph();
+      const quote: string[] = [];
+      while (index < lines.length && lines[index].trim().startsWith(">")) {
+        quote.push(lines[index].trim().replace(/^>\s?/, ""));
+        index += 1;
       }
-      i++; // skip closing ```
-      sections.push({ type: 'code', content: codeLines.join('\n') });
+      sections.push({ type: "quote", content: cleanInline(quote.join(" ")) });
       continue;
     }
 
-    // Unordered list
-    if (/^[-*] /.test(line) || /^\d+\. /.test(line)) {
-      flushBody();
-      const items = [];
-      while (i < lines.length && (/^[-*] /.test(lines[i]) || /^\d+\. /.test(lines[i]))) {
-        const item = lines[i].replace(/^[-*] /, '').replace(/^\d+\. /, '').trim();
-        items.push(item);
-        i++;
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      flushParagraph();
+      const tableLines: string[] = [];
+      while (index < lines.length && lines[index].trim().startsWith("|")) {
+        tableLines.push(lines[index].trim());
+        index += 1;
       }
-      sections.push({ type: 'list', items });
-      continue;
-    }
-
-    // Table → skip (render as body note)
-    if (line.startsWith('|')) {
-      flushBody();
-      const tableLines = [];
-      while (i < lines.length && lines[i].startsWith('|')) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      // Convert table to a list of key: value pairs
-      const headerLine = tableLines[0];
-      const headers = headerLine.split('|').map(h => h.trim()).filter(Boolean);
-      const dataRows = tableLines.slice(2); // skip header and separator
-      const items = dataRows.map(row => {
-        const cells = row.split('|').map(c => c.trim()).filter(Boolean);
-        return cells.map((c, idx) => `**${headers[idx] ?? ''}:** ${c}`).join(' — ');
-      }).filter(Boolean);
-      if (items.length > 0) {
-        sections.push({ type: 'list', items });
+      const rows = tableLines
+        .filter((tableLine) => !/^\|?\s*:?-{3,}/.test(tableLine))
+        .map((tableLine) => tableLine.split("|").slice(1, -1).map((cell) => cleanInline(cell)));
+      if (rows.length > 0) {
+        sections.push({ type: "table", headers: rows[0], rows: rows.slice(1) });
       }
       continue;
     }
 
-    // Empty line — flush body paragraph
-    if (line.trim() === '') {
-      flushBody();
-      i++;
+    if (/^(?:[-*+]\s+|\d+\.\s+)/.test(trimmed)) {
+      flushParagraph();
+      const items: string[] = [];
+      while (index < lines.length && /^(?:[-*+]\s+|\d+\.\s+)/.test(lines[index].trim())) {
+        items.push(cleanInline(lines[index].trim().replace(/^(?:[-*+]\s+|\d+\.\s+)/, "")));
+        index += 1;
+      }
+      sections.push({ type: "list", items });
       continue;
     }
 
-    // Regular body text
-    currentBodyLines.push(line);
-    i++;
+    paragraph.push(line);
+    index += 1;
   }
 
-  flushBody();
+  flushParagraph();
   return sections;
 }

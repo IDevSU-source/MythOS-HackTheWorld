@@ -1,4 +1,4 @@
-# MythOS: Hack The World — Project TODO
+# TPS: Hack The World — Project TODO
 
 ## Setup & Branding
 - [x] Generate custom app logo (terminal/hacker aesthetic)
@@ -8,7 +8,6 @@
 
 ## Data Layer
 - [x] Create TPS content data file (chapters, lexicon, devlogs)
-- [x] Sync all content from upstream c4chaos-io repo (45 chapters, 39 devlogs, 177 lexicon entries)
 - [x] Create AsyncStorage progress store (XP, completed chapters, badges)
 - [x] Create gamification logic (XP calculation, level system, badges)
 
@@ -31,11 +30,6 @@
 - [x] Daily reading streak
 
 ## Polish
-- [x] Rename app to MythOS: Hack the World with fresh bundle ID
-- [x] Generate new MythOS mandala app icon
-- [x] Fix all TypeScript errors (0 errors)
-- [x] All tests passing (20/20)
-- [x] Commit contribution to GitHub repo
 - [x] Terminal-style animations on key screens (blinking cursor, boot sequence)
 - [x] Haptic feedback on XP earn and checkpoint unlock
 - [x] XP popup animation on chapter completion
@@ -44,6 +38,24 @@
 
 ## Future Enhancements
 - [ ] Add quiz/knowledge check after each chapter
-- [ ] Add visual infographic content (currently placeholder)
+- [x] Add visual infographic content (currently placeholder)
 - [ ] Add search across all chapters
 - [ ] Add "Daily Challenge" feature
+
+## Termux Build Bootstrap
+- [ ] Confirm a viable Termux-compatible Android build path for the restored MythOS source
+- [ ] Add a paste-once Termux bootstrap script with safe local keystore handling
+- [ ] Publish and validate the script in the public MythOS source repository
+
+## Release-Candidate Content & Progression Overhaul
+- [x] Audit every app content record against the current upstream HackTheWorldTPS repository
+- [x] Import complete, untruncated upstream chapter content and all missing modules
+- [x] Add Personal Codex chapters, API integration material, and the Silicon Sutra white paper
+- [x] Reconcile all 39 upstream devlogs and replace hardcoded UI totals
+- [x] Reconcile the lexicon with the full upstream source and correct the entry total
+- [x] Import and bundle all available upstream infographic assets
+- [x] Correct onboarding so Root Access is not granted during first boot
+- [x] Redesign XP thresholds and completion gating so Root Access requires complete reading progress
+- [x] Add content-integrity tests for counts, non-truncation, progression, and all release content
+- [x] Validate the full release candidate and prepare Google Play launch guidance
+- [x] Fix Metro infographic asset resolution error discovered during checkpoint validation

@@ -1,144 +1,85 @@
-import { describe, it, expect } from 'vitest';
-import { CHAPTERS, LEXICON, DEVLOGS, BADGES, LEVELS, getLevelForXP } from '../lib/tps-data';
-import { parseMarkdownToSections } from '../lib/content-parser';
-import { isChapterUnlocked } from '../lib/progress-store';
+import { describe, expect, it } from 'vitest';
 
-describe('TPS Data Integrity', () => {
-  it('should have chapters with required fields', () => {
-    expect(CHAPTERS.length).toBeGreaterThan(0);
-    for (const chapter of CHAPTERS) {
-      expect(chapter.id).toBeTruthy();
-      expect(chapter.title).toBeTruthy();
-      expect(chapter.content).toBeTruthy();
-      expect(typeof chapter.xpReward).toBe('number');
-      expect(chapter.xpReward).toBeGreaterThan(0);
-      expect(typeof chapter.part).toBe('number');
-    }
+import {
+  CHAPTERS,
+  DEVLOGS,
+  LEXICON,
+  PARTS,
+  ROOT_ACCESS_XP,
+  ROOT_REQUIRED_DEVLOG_IDS,
+  ROOT_REQUIRED_MODULE_IDS,
+  getLevelForXP,
+} from '../lib/tps-data';
+import { parseMarkdownToSections, type ContentSection } from '../lib/content-parser';
+import { EMPTY_PROGRESS, getEffectiveLevel, isChapterUnlocked, isRootAccessUnlocked } from '../lib/progress-store';
+
+describe('release content integrity', () => {
+  it('includes the complete first release corpus', () => {
+    expect(CHAPTERS).toHaveLength(65);
+    expect(DEVLOGS).toHaveLength(39);
+    expect(LEXICON).toHaveLength(192);
+    expect(PARTS).toHaveLength(7);
   });
 
-  it('should have lexicon entries', () => {
-    expect(LEXICON.length).toBeGreaterThan(0);
-    for (const entry of LEXICON) {
-      expect(entry.id).toBeTruthy();
-      expect(entry.tpsTerm).toBeTruthy();
-    }
+  it('contains full-length source text rather than truncated excerpts', () => {
+    expect(CHAPTERS.every((chapter) => chapter.content.length >= 200)).toBe(true);
+    expect(CHAPTERS.reduce((total, chapter) => total + chapter.content.length, 0)).toBeGreaterThan(250_000);
+    expect(DEVLOGS.reduce((total, devlog) => total + devlog.content.length, 0)).toBeGreaterThan(400_000);
   });
 
-  it('should have devlogs', () => {
-    expect(DEVLOGS.length).toBeGreaterThan(0);
-    for (const log of DEVLOGS) {
-      expect(log.id).toBeTruthy();
-      expect(log.title).toBeTruthy();
-      expect(log.content).toBeTruthy();
-      expect(log.xpReward).toBeGreaterThan(0);
-    }
+  it('includes Personal Codex, source integrations, and the Silicon Sutra white paper', () => {
+    expect(CHAPTERS.filter((chapter) => chapter.group === 'codex')).toHaveLength(12);
+    expect(CHAPTERS.some((chapter) => chapter.sourcePath.endsWith('ch10_03_white_paper.md'))).toBe(true);
+    const corpus = [...CHAPTERS, ...DEVLOGS].map((entry) => entry.content).join('\n');
+    for (const term of ['Gnosticism', 'Hermeticism', 'Stoicism', 'Zen']) expect(corpus).toContain(term);
   });
 
-  it('should have 8 badges', () => {
-    expect(BADGES.length).toBe(8);
-  });
-
-  it('should have 8 levels', () => {
-    expect(LEVELS.length).toBe(8);
+  it('uses a root XP total equal to all source reading rewards', () => {
+    const sourceXp = CHAPTERS.filter((chapter) => chapter.requiredForRootAccess).reduce((total, chapter) => total + chapter.xpReward, 0) + DEVLOGS.filter((devlog) => devlog.requiredForRootAccess).reduce((total, devlog) => total + devlog.xpReward, 0);
+    expect(ROOT_ACCESS_XP).toBe(sourceXp);
   });
 });
 
-describe('getLevelForXP', () => {
-  it('should return level 1 for 0 XP', () => {
-    const level = getLevelForXP(0);
-    expect(level.level).toBe(1);
-    expect(level.name).toBe('Booting Up');
+describe('progression rules', () => {
+  it('unlocks only the first module on a fresh profile', () => {
+    expect(isChapterUnlocked(CHAPTERS[0].id, [])).toBe(true);
+    expect(isChapterUnlocked(CHAPTERS[1].id, [])).toBe(false);
   });
 
-  it('should return level 2 for 500 XP', () => {
-    const level = getLevelForXP(500);
-    expect(level.level).toBe(2);
+  it('unlocks a module after its predecessor is completed', () => {
+    expect(isChapterUnlocked(CHAPTERS[1].id, [CHAPTERS[0].id])).toBe(true);
   });
 
-  it('should return level 8 for 7000+ XP', () => {
-    const level = getLevelForXP(7000);
-    expect(level.level).toBe(8);
-    expect(level.name).toBe('Root Access');
+  it('does not grant Root Access based on XP alone', () => {
+    const profile = { ...EMPTY_PROGRESS, xp: ROOT_ACCESS_XP };
+    expect(isRootAccessUnlocked(profile)).toBe(false);
+    expect(getEffectiveLevel(profile).level).toBe(7);
   });
 
-  it('should return the highest level for very high XP', () => {
-    const level = getLevelForXP(99999);
-    expect(level.level).toBe(8);
-  });
-});
-
-describe('parseMarkdownToSections', () => {
-  it('should parse headings', () => {
-    const sections = parseMarkdownToSections('## Hello World');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('heading');
-    expect(sections[0].content).toBe('Hello World');
-  });
-
-  it('should parse subheadings', () => {
-    const sections = parseMarkdownToSections('### Sub Heading');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('subheading');
-  });
-
-  it('should parse blockquotes', () => {
-    const sections = parseMarkdownToSections('> This is a quote');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('quote');
-  });
-
-  it('should parse code blocks', () => {
-    const sections = parseMarkdownToSections('```\nsome code\n```');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('code');
-    expect(sections[0].content).toBe('some code');
-  });
-
-  it('should parse unordered lists', () => {
-    const sections = parseMarkdownToSections('- Item 1\n- Item 2\n- Item 3');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('list');
-    expect(sections[0].items).toHaveLength(3);
-  });
-
-  it('should parse body text', () => {
-    const sections = parseMarkdownToSections('This is body text.');
-    expect(sections).toHaveLength(1);
-    expect(sections[0].type).toBe('body');
-    expect(sections[0].content).toBe('This is body text.');
-  });
-
-  it('should handle mixed content', () => {
-    const md = `## Title\n\nSome body text.\n\n> A quote\n\n- Item 1\n- Item 2`;
-    const sections = parseMarkdownToSections(md);
-    const types = sections.map(s => s.type);
-    expect(types).toContain('heading');
-    expect(types).toContain('body');
-    expect(types).toContain('quote');
-    expect(types).toContain('list');
+  it('grants Root Access only after every required module and devlog is recorded', () => {
+    const profile = {
+      ...EMPTY_PROGRESS,
+      xp: ROOT_ACCESS_XP,
+      completedChapters: [...ROOT_REQUIRED_MODULE_IDS],
+      completedDevlogs: [...ROOT_REQUIRED_DEVLOG_IDS],
+    };
+    expect(isRootAccessUnlocked(profile)).toBe(true);
+    expect(getEffectiveLevel(profile).level).toBe(8);
+    expect(getLevelForXP(ROOT_ACCESS_XP).name).toBe('Root Access');
   });
 });
 
-describe('isChapterUnlocked', () => {
-  it('should unlock the first chapter always', () => {
-    const firstId = CHAPTERS[0].id;
-    expect(isChapterUnlocked(firstId, [])).toBe(true);
-  });
+describe('Markdown rendering parser', () => {
+  const firstOf = <T extends ContentSection['type']>(sections: ContentSection[], type: T) => sections.find((section): section is Extract<ContentSection, { type: T }> => section.type === type);
 
-  it('should lock the second chapter when first is not completed', () => {
-    const secondId = CHAPTERS[1].id;
-    expect(isChapterUnlocked(secondId, [])).toBe(false);
-  });
-
-  it('should unlock the second chapter when first is completed', () => {
-    const firstId = CHAPTERS[0].id;
-    const secondId = CHAPTERS[1].id;
-    expect(isChapterUnlocked(secondId, [firstId])).toBe(true);
-  });
-
-  it('should unlock a chapter when its predecessor is completed', () => {
-    const completedIds = CHAPTERS.slice(0, 5).map(c => c.id);
-    const sixthId = CHAPTERS[5].id;
-    expect(isChapterUnlocked(sixthId, completedIds)).toBe(true);
+  it('parses headings, body text, quotes, lists, code, images, and tables', () => {
+    const sections = parseMarkdownToSections('## Title\n\nParagraph\n\n> Quote\n\n- One\n- Two\n\n```\ncode\n```\n\n![Visual](/assets/infographics/TPS_IMG_Core.jpg)\n\n| A | B |\n| --- | --- |\n| 1 | 2 |');
+    expect(firstOf(sections, 'heading')?.content).toBe('Title');
+    expect(firstOf(sections, 'body')?.content).toBe('Paragraph');
+    expect(firstOf(sections, 'quote')?.content).toBe('Quote');
+    expect(firstOf(sections, 'list')?.items).toEqual(['One', 'Two']);
+    expect(firstOf(sections, 'code')?.content).toBe('code');
+    expect(firstOf(sections, 'image')?.assetName).toBe('TPS_IMG_Core.jpg');
+    expect(firstOf(sections, 'table')?.rows).toEqual([['1', '2']]);
   });
 });

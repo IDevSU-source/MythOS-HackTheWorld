@@ -1,174 +1,49 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, Animated, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useProgress } from '@/lib/progress-context';
 import * as Haptics from 'expo-haptics';
 
-const C = {
-  bg: '#0A0E1A', surface: '#111827', surface2: '#1A2236',
-  primary: '#00FF88', secondary: '#00D4FF', accent: '#FF6B35',
-  text: '#E2E8F0', muted: '#64748B', border: '#1E293B',
-};
+import { useProgress } from '@/lib/progress-context';
+import { CHAPTERS, DEVLOGS, LEXICON } from '@/lib/tps-data';
 
+const C = { bg: '#0A0E1A', surface: '#111827', primary: '#00FF88', secondary: '#00D4FF', text: '#E2E8F0', muted: '#8B9BB4', border: '#26334B', warning: '#FBBF24' };
 const BOOT_LINES = [
-  { text: '> SYSTEM BOOT SEQUENCE INITIATED...', delay: 0 },
-  { text: '> KERNEL_VERSION: TPS_v1.0', delay: 400 },
-  { text: '> CHECKING PERMISSIONS...', delay: 800 },
-  { text: '> ROOT_ACCESS: GRANTED', delay: 1200 },
-  { text: '> LOADING PHYSICS ENGINE...', delay: 1600 },
-  { text: '> SCANNING FOR MALWARE...', delay: 2000 },
-  { text: '> WARNING: SELF_PROCESS DETECTED', delay: 2400 },
-  { text: '> INITIALIZING DIAGNOSTIC SUITE...', delay: 2800 },
-  { text: '> PRESS [ENTER] TO BEGIN HACK...', delay: 3400 },
+  { text: '> MYTHOS BOOT SEQUENCE INITIATED…', delay: 0 },
+  { text: '> PROTOCOL: HACK_THE_WORLD_v1.0', delay: 350 },
+  { text: '> LOADING COMPLETE SOURCE ARCHIVE…', delay: 700 },
+  { text: '> ROOT_ACCESS: LOCKED — STUDY REQUIRED', delay: 1050 },
+  { text: '> SCANNING FOR SELF_PROCESS…', delay: 1400 },
+  { text: '> DIAGNOSTIC SUITE READY', delay: 1750 },
+  { text: '> PRESS BEGIN TO EXPLORE THE SOURCE', delay: 2100 },
 ];
 
 function BootLine({ text, delay }: { text: string; delay: number }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(true);
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
+  useEffect(() => { const timer = setTimeout(() => { setVisible(true); Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }).start(); }, delay); return () => clearTimeout(timer); }, [delay, opacity]);
   if (!visible) return null;
-
-  const isWarning = text.includes('WARNING');
-  const isGranted = text.includes('GRANTED');
-  const isPress = text.includes('PRESS');
-
-  return (
-    <Animated.Text style={[
-      styles.bootLine,
-      isWarning && { color: '#FBBF24' },
-      isGranted && { color: C.primary },
-      isPress && { color: C.secondary, fontWeight: '700' },
-      { opacity },
-    ]}>
-      {text}
-    </Animated.Text>
-  );
+  return <Animated.Text style={[styles.bootLine, text.includes('LOCKED') && { color: C.warning }, text.includes('READY') && { color: C.primary }, { opacity }]}>{text}</Animated.Text>;
 }
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { setOnboardedAction } = useProgress();
-  const [showButton, setShowButton] = useState(false);
+  const [ready, setReady] = useState(false);
   const buttonOpacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => { const timer = setTimeout(() => { setReady(true); Animated.timing(buttonOpacity, { toValue: 1, duration: 350, useNativeDriver: true }).start(); }, 2450); return () => clearTimeout(timer); }, [buttonOpacity]);
+  const start = async () => { if (Platform.OS !== 'web') await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); await setOnboardedAction(); router.replace('/(tabs)' as any); };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowButton(true);
-      Animated.timing(buttonOpacity, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    }, 3800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleStart = async () => {
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-    await setOnboardedAction();
-    router.replace('/(tabs)' as any);
-  };
-
-  return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Logo */}
-        <View style={styles.logoSection}>
-          <Text style={styles.logoText}>TPS</Text>
-          <Text style={styles.logoSub}>HACK THE WORLD</Text>
-          <Text style={styles.logoTagline}>A Technical Manual for the Biological OS</Text>
-        </View>
-
-        {/* Terminal */}
-        <View style={styles.terminal}>
-          <View style={styles.terminalHeader}>
-            <View style={[styles.terminalDot, { backgroundColor: '#F87171' }]} />
-            <View style={[styles.terminalDot, { backgroundColor: '#FBBF24' }]} />
-            <View style={[styles.terminalDot, { backgroundColor: '#4ADE80' }]} />
-            <Text style={styles.terminalTitle}>tps_diagnostic.sh</Text>
-          </View>
-          <View style={styles.terminalBody}>
-            {BOOT_LINES.map((line, i) => (
-              <BootLine key={i} text={line.text} delay={line.delay} />
-            ))}
-          </View>
-        </View>
-
-        {/* Description */}
-        <View style={styles.descSection}>
-          <Text style={styles.descTitle}>Reality is a simulation.</Text>
-          <Text style={styles.descText}>
-            You are running buggy software. The bug is suffering. The fix is available.
-            {'\n\n'}
-            This is not a self-help app. This is a <Text style={styles.highlight}>technical manual</Text> for debugging your biological operating system — using the same framework that millions of engineers have run for 2,500 years.
-            {'\n\n'}
-            The ancient engineers called it <Text style={styles.highlight}>Dharma</Text>. We call it <Text style={styles.highlight}>Trillions Per Second</Text>.
-          </Text>
-        </View>
-
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>20+</Text>
-            <Text style={styles.statLabel}>CHAPTERS</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>30</Text>
-            <Text style={styles.statLabel}>LEXICON TERMS</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>8</Text>
-            <Text style={styles.statLabel}>BADGES</Text>
-          </View>
-        </View>
-
-        {/* Start Button */}
-        {showButton && (
-          <Animated.View style={{ opacity: buttonOpacity }}>
-            <Pressable
-              style={({ pressed }) => [styles.startBtn, pressed && { opacity: 0.85 }]}
-              onPress={handleStart}
-            >
-              <Text style={styles.startBtnText}>&gt;_ INITIATE DIAGNOSTIC</Text>
-            </Pressable>
-            <Text style={styles.startNote}>No account required. All progress stored locally.</Text>
-          </Animated.View>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
-  );
+  return <View style={styles.container}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.logo}><Text style={styles.logoMark}>MYTHOS</Text><Text style={styles.logoSub}>HACK THE WORLD</Text><Text style={styles.tagline}>A technical reader for the biological operating system</Text></View>
+    <View style={styles.terminal}><View style={styles.terminalTop}><View style={[styles.dot, { backgroundColor: '#F87171' }]} /><View style={[styles.dot, { backgroundColor: C.warning }]} /><View style={[styles.dot, { backgroundColor: C.primary }]} /><Text style={styles.terminalName}>mythos_boot.sh</Text></View><View style={styles.terminalBody}>{BOOT_LINES.map((line) => <BootLine key={line.text} {...line} />)}</View></View>
+    <View style={styles.copy}><Text style={styles.copyTitle}>The source is the curriculum.</Text><Text style={styles.copyText}>MythOS is not a promise of instant access. It is a guided way to explore the full <Text style={styles.highlight}>HackTheWorldTPS</Text> source archive: core protocol, Personal Codex, research, visual material, and devlogs.</Text></View>
+    <View style={styles.stats}><View style={styles.stat}><Text style={styles.statNumber}>{CHAPTERS.length}</Text><Text style={styles.statLabel}>MODULES</Text></View><View style={styles.stat}><Text style={styles.statNumber}>{DEVLOGS.length}</Text><Text style={styles.statLabel}>DEVLOGS</Text></View><View style={styles.stat}><Text style={styles.statNumber}>{LEXICON.length}</Text><Text style={styles.statLabel}>TERMS</Text></View></View>
+    {ready && <Animated.View style={{ opacity: buttonOpacity }}><Pressable style={({ pressed }) => [styles.button, pressed && { opacity: 0.82 }]} onPress={start}><Text style={styles.buttonText}>BEGIN EXPLORATION</Text></Pressable><Text style={styles.note}>Root Access remains locked until the complete required source map is read. Progress is stored locally.</Text></Animated.View>}
+  </ScrollView></View>;
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { padding: 24, paddingTop: 60 },
-  logoSection: { alignItems: 'center', marginBottom: 32 },
-  logoText: { color: C.primary, fontSize: 48, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 8 },
-  logoSub: { color: C.secondary, fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 4, marginBottom: 8 },
-  logoTagline: { color: C.muted, fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
-  terminal: { backgroundColor: '#0D1117', borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: C.border, overflow: 'hidden' },
-  terminalHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#161B22', padding: 10, gap: 6 },
-  terminalDot: { width: 10, height: 10, borderRadius: 5 },
-  terminalTitle: { color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', marginLeft: 8 },
-  terminalBody: { padding: 16, minHeight: 200 },
-  bootLine: { color: C.muted, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', lineHeight: 22 },
-  descSection: { marginBottom: 24 },
-  descTitle: { color: C.text, fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  descText: { color: C.muted, fontSize: 14, lineHeight: 22 },
-  highlight: { color: C.primary, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: C.surface, borderRadius: 12, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: C.border },
-  stat: { alignItems: 'center' },
-  statNum: { color: C.primary, fontSize: 24, fontWeight: '700', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  statLabel: { color: C.muted, fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 0.5, marginTop: 4 },
-  startBtn: { backgroundColor: C.primary, borderRadius: 14, padding: 18, alignItems: 'center', marginBottom: 12 },
-  startBtnText: { color: C.bg, fontSize: 16, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1 },
-  startNote: { color: C.muted, fontSize: 12, textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  container: { flex: 1, backgroundColor: C.bg }, content: { padding: 24, paddingTop: 58, paddingBottom: 42 }, logo: { alignItems: 'center', marginBottom: 30 }, logoMark: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 39, fontWeight: '700', letterSpacing: 7 }, logoSub: { color: C.secondary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 12, fontWeight: '700', letterSpacing: 4, marginTop: 5 }, tagline: { color: C.muted, fontSize: 12, textAlign: 'center', marginTop: 9, fontStyle: 'italic' },
+  terminal: { backgroundColor: '#080D17', borderWidth: 1, borderColor: C.border, borderRadius: 12, overflow: 'hidden', marginBottom: 24 }, terminalTop: { backgroundColor: '#151C2B', flexDirection: 'row', alignItems: 'center', gap: 6, padding: 10 }, dot: { width: 10, height: 10, borderRadius: 5 }, terminalName: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10, marginLeft: 6 }, terminalBody: { minHeight: 175, padding: 15 }, bootLine: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 11, lineHeight: 22 },
+  copy: { marginBottom: 22 }, copyTitle: { color: C.text, fontSize: 21, fontWeight: '700', marginBottom: 10 }, copyText: { color: C.muted, fontSize: 14, lineHeight: 22 }, highlight: { color: C.primary, fontWeight: '700' }, stats: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 24 }, stat: { alignItems: 'center' }, statNumber: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 23, fontWeight: '700' }, statLabel: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 9, letterSpacing: 0.6, marginTop: 4 }, button: { backgroundColor: C.primary, borderRadius: 13, alignItems: 'center', padding: 17, marginBottom: 12 }, buttonText: { color: C.bg, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 14, fontWeight: '700', letterSpacing: 0.7 }, note: { color: C.muted, textAlign: 'center', fontSize: 12, lineHeight: 18 },
 });

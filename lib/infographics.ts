@@ -1,0 +1,63 @@
+import type { ImageSourcePropType } from "react-native";
+
+// Generated from the upstream HackTheWorldTPS infographic directory.
+export const INFOGRAPHICS: Record<string, ImageSourcePropType> = {
+  "TPS_IMG_AsimovPsychohistory.jpg": require("../assets/infographics/TPS_IMG_AsimovPsychohistory.jpg"),
+  "TPS_IMG_BecomingFire.jpg": require("../assets/infographics/TPS_IMG_BecomingFire.jpg"),
+  "TPS_IMG_CentaurWorkflow.jpg": require("../assets/infographics/TPS_IMG_CentaurWorkflow.jpg"),
+  "TPS_IMG_CentaurWorkflow2.jpg": require("../assets/infographics/TPS_IMG_CentaurWorkflow2.jpg"),
+  "TPS_IMG_CentaurWorkflowDiagram.jpg": require("../assets/infographics/TPS_IMG_CentaurWorkflowDiagram.jpg"),
+  "TPS_IMG_Chapter10Detour.jpg": require("../assets/infographics/TPS_IMG_Chapter10Detour.jpg"),
+  "TPS_IMG_Checkpoint01.jpg": require("../assets/infographics/TPS_IMG_Checkpoint01.jpg"),
+  "TPS_IMG_Checkpoint01Exit.jpg": require("../assets/infographics/TPS_IMG_Checkpoint01Exit.jpg"),
+  "TPS_IMG_Checkpoint02.jpg": require("../assets/infographics/TPS_IMG_Checkpoint02.jpg"),
+  "TPS_IMG_Checkpoint03.jpg": require("../assets/infographics/TPS_IMG_Checkpoint03.jpg"),
+  "TPS_IMG_Core.jpg": require("../assets/infographics/TPS_IMG_Core.jpg"),
+  "TPS_IMG_Firewall.jpg": require("../assets/infographics/TPS_IMG_Firewall.jpg"),
+  "TPS_IMG_GlobalSystemLatency.jpg": require("../assets/infographics/TPS_IMG_GlobalSystemLatency.jpg"),
+  "TPS_IMG_HardwareSpecs.jpg": require("../assets/infographics/TPS_IMG_HardwareSpecs.jpg"),
+  "TPS_IMG_KalapaOctad.jpg": require("../assets/infographics/TPS_IMG_KalapaOctad.jpg"),
+  "TPS_IMG_KalapasFlux.jpg": require("../assets/infographics/TPS_IMG_KalapasFlux.jpg"),
+  "TPS_IMG_KernelSpecs.jpg": require("../assets/infographics/TPS_IMG_KernelSpecs.jpg"),
+  "TPS_IMG_Lineage.jpg": require("../assets/infographics/TPS_IMG_Lineage.jpg"),
+  "TPS_IMG_MasterLexicon.jpg": require("../assets/infographics/TPS_IMG_MasterLexicon.jpg"),
+  "TPS_IMG_NetworkSecurity.jpg": require("../assets/infographics/TPS_IMG_NetworkSecurity.jpg"),
+  "TPS_IMG_OnAurobindo.jpg": require("../assets/infographics/TPS_IMG_OnAurobindo.jpg"),
+  "TPS_IMG_OriginStory.jpg": require("../assets/infographics/TPS_IMG_OriginStory.jpg"),
+  "TPS_IMG_Overclock.jpg": require("../assets/infographics/TPS_IMG_Overclock.jpg"),
+  "TPS_IMG_OverclockBoost.jpg": require("../assets/infographics/TPS_IMG_OverclockBoost.jpg"),
+  "TPS_IMG_PKD.jpg": require("../assets/infographics/TPS_IMG_PKD.jpg"),
+  "TPS_IMG_PacketSniffing.jpg": require("../assets/infographics/TPS_IMG_PacketSniffing.jpg"),
+  "TPS_IMG_PhysicsEngine.jpg": require("../assets/infographics/TPS_IMG_PhysicsEngine.jpg"),
+  "TPS_IMG_PhysicsTickRate.jpg": require("../assets/infographics/TPS_IMG_PhysicsTickRate.jpg"),
+  "TPS_IMG_SiliconSutra_QuadCore.jpg": require("../assets/infographics/TPS_IMG_SiliconSutra_QuadCore.jpg"),
+  "TPS_IMG_SiliconSutra_RLTA.jpg": require("../assets/infographics/TPS_IMG_SiliconSutra_RLTA.jpg"),
+  "TPS_IMG_SourceCode.jpg": require("../assets/infographics/TPS_IMG_SourceCode.jpg"),
+  "TPS_IMG_StagingEnvironment.jpg": require("../assets/infographics/TPS_IMG_StagingEnvironment.jpg"),
+  "TPS_IMG_StagingEnvironment02.jpg": require("../assets/infographics/TPS_IMG_StagingEnvironment02.jpg"),
+  "TPS_IMG_SumerianColdStorage.jpg": require("../assets/infographics/TPS_IMG_SumerianColdStorage.jpg"),
+  "TPS_IMG_SyncFlux.jpg": require("../assets/infographics/TPS_IMG_SyncFlux.jpg"),
+  "TPS_IMG_SysRoadmap.jpg": require("../assets/infographics/TPS_IMG_SysRoadmap.jpg"),
+  "TPS_IMG_SystemDependencies.jpg": require("../assets/infographics/TPS_IMG_SystemDependencies.jpg"),
+  "TPS_IMG_SystemRoadmap.jpg": require("../assets/infographics/TPS_IMG_SystemRoadmap.jpg"),
+  "TPS_IMG_TheAlgorithm.jpg": require("../assets/infographics/TPS_IMG_TheAlgorithm.jpg"),
+  "TPS_IMG_TheDataHandshake.jpg": require("../assets/infographics/TPS_IMG_TheDataHandshake.jpg"),
+  "TPS_IMG_TheGUI.jpg": require("../assets/infographics/TPS_IMG_TheGUI.jpg"),
+  "TPS_IMG_TheIdleProcess.jpg": require("../assets/infographics/TPS_IMG_TheIdleProcess.jpg"),
+  "TPS_IMG_TheInfiniteLoop.jpg": require("../assets/infographics/TPS_IMG_TheInfiniteLoop.jpg"),
+  "TPS_IMG_TheRenderEngine.jpg": require("../assets/infographics/TPS_IMG_TheRenderEngine.jpg"),
+  "TPS_IMG_TheSelfRootkit.jpg": require("../assets/infographics/TPS_IMG_TheSelfRootkit.jpg"),
+  "TPS_IMG_TheoryVsPractice.jpg": require("../assets/infographics/TPS_IMG_TheoryVsPractice.jpg"),
+  "TPS_IMG_ThreeSignatures.jpg": require("../assets/infographics/TPS_IMG_ThreeSignatures.jpg"),
+  "TPS_IMG_TrojanHorse.jpg": require("../assets/infographics/TPS_IMG_TrojanHorse.jpg"),
+  "TPS_IMG_UnifiedTheory.jpg": require("../assets/infographics/TPS_IMG_UnifiedTheory.jpg"),
+  "TPS_IMG_UserPermissions.jpg": require("../assets/infographics/TPS_IMG_UserPermissions.jpg"),
+  "TPS_IMG_WakingUpInTheFlux.jpg": require("../assets/infographics/TPS_IMG_WakingUpInTheFlux.jpg"),
+  "TPS_IMG_ZombieParadox.jpg": require("../assets/infographics/TPS_IMG_ZombieParadox.jpg"),
+};
+
+export function getInfographicAsset(assetName: string): ImageSourcePropType | undefined {
+  return INFOGRAPHICS[assetName];
+}
+
+export const INFOGRAPHIC_COUNT = Object.keys(INFOGRAPHICS).length;

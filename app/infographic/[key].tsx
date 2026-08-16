@@ -1,58 +1,31 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, Text, Pressable, Image, ScrollView, StyleSheet, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import { ScreenContainer } from '@/components/screen-container';
+import { getInfographicAsset } from '@/lib/infographics';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
-const INFOGRAPHICS: { key: string; title: string; description: string }[] = [
-  { key: 'placeholder', title: 'Infographic', description: 'Coming soon' },
-];
-
-const C = {
-  bg: '#0A0E1A', surface: '#111827', surface2: '#1A2236',
-  primary: '#00FF88', secondary: '#00D4FF', accent: '#FF6B35',
-  text: '#E2E8F0', muted: '#64748B', border: '#1E293B',
-};
+const C = { bg: '#0A0E1A', surface: '#111827', primary: '#00FF88', text: '#E2E8F0', muted: '#8B9BB4', border: '#26334B' };
+const titleFor = (key: string) => key.replace(/^TPS_IMG_/, '').replace(/\.[^.]+$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
 
 export default function InfographicScreen() {
   const { key } = useLocalSearchParams<{ key: string }>();
   const router = useRouter();
-
-  const infographic = INFOGRAPHICS.find(i => i.key === key);
-
+  const fileName = decodeURIComponent(key || '');
+  const image = getInfographicAsset(fileName);
   return (
-    <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
-      <View style={styles.topNav}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="arrow.left" size={20} color={C.text} />
-        </Pressable>
-        <Text style={styles.navLabel}>INFOGRAPHIC</Text>
-      </View>
-
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderIcon}>📊</Text>
-          <Text style={styles.placeholderTitle}>{infographic?.title ?? key}</Text>
-          <Text style={styles.placeholderDesc}>{infographic?.description}</Text>
-          <View style={styles.comingSoon}>
-            <Text style={styles.comingSoonText}>&gt; INFOGRAPHIC RENDERING...</Text>
-          </View>
-        </View>
+    <ScreenContainer edges={['top', 'left', 'right']}>
+      <View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><IconSymbol name="arrow.left" size={20} color={C.text} /></Pressable><Text style={styles.headerTitle}>VISUAL ARCHIVE</Text></View>
+      <ScrollView contentContainerStyle={styles.content} style={styles.scroll} maximumZoomScale={3} minimumZoomScale={1}>
+        {image ? <Image source={image} style={styles.image} resizeMode="contain" accessibilityLabel={titleFor(fileName)} /> : <View style={styles.missing}><Text style={styles.missingTitle}>VISUAL NOT FOUND</Text><Text style={styles.missingCopy}>{fileName}</Text></View>}
+        <Text style={styles.title}>{titleFor(fileName)}</Text>
+        <Text style={styles.caption}>Bundled from the upstream HackTheWorldTPS visual archive. Pinch to zoom for detailed reading.</Text>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  topNav: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.border },
-  backButton: { padding: 4, marginRight: 12 },
-  navLabel: { color: C.primary, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1 },
-  scroll: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { padding: 24, alignItems: 'center', justifyContent: 'center', flex: 1 },
-  placeholder: { alignItems: 'center', padding: 32 },
-  placeholderIcon: { fontSize: 48, marginBottom: 16 },
-  placeholderTitle: { color: C.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  placeholderDesc: { color: C.muted, fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 24 },
-  comingSoon: { backgroundColor: C.surface2, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: C.primary + '33' },
-  comingSoonText: { color: C.primary, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: C.border }, back: { padding: 5, marginRight: 10 }, headerTitle: { color: C.primary, fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 0.8 }, scroll: { flex: 1, backgroundColor: C.bg }, content: { padding: 16, alignItems: 'center' }, image: { width: '100%', height: 500, borderRadius: 10, backgroundColor: '#080D17' }, title: { alignSelf: 'stretch', color: C.text, fontSize: 20, lineHeight: 27, fontWeight: '700', marginTop: 18 }, caption: { alignSelf: 'stretch', color: C.muted, fontSize: 13, lineHeight: 20, marginTop: 8 }, missing: { width: '100%', padding: 30, borderRadius: 10, alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border }, missingTitle: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', marginBottom: 8 }, missingCopy: { color: C.muted, textAlign: 'center' },
 });

@@ -1,171 +1,42 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform, Alert } from 'react-native';
+
 import { ScreenContainer } from '@/components/screen-container';
 import { useProgress } from '@/lib/progress-context';
-import { BADGES, CHAPTERS, LEVELS, getLevelForXP } from '@/lib/tps-data';
+import { BADGES, CHAPTERS, DEVLOGS, LEVELS, ROOT_ACCESS_XP } from '@/lib/tps-data';
+import { INFOGRAPHIC_COUNT } from '@/lib/infographics';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
-const C = {
-  bg: '#0A0E1A', surface: '#111827', surface2: '#1A2236',
-  primary: '#00FF88', secondary: '#00D4FF', accent: '#FF6B35',
-  text: '#E2E8F0', muted: '#64748B', border: '#1E293B', error: '#F87171',
-};
+const C = { bg: '#0A0E1A', surface: '#111827', surface2: '#1A2236', primary: '#00FF88', secondary: '#00D4FF', accent: '#FFB454', text: '#E2E8F0', muted: '#8B9BB4', border: '#26334B', error: '#F87171' };
 
 export default function ProfileScreen() {
-  const { progress, currentLevel, xpProgress, resetAction } = useProgress();
+  const { progress, currentLevel, xpProgress, rootAccessUnlocked, rootAccessProgress, resetAction } = useProgress();
+  const completedModules = progress.completedChapters.filter((id) => CHAPTERS.some((chapter) => chapter.id === id)).length;
+  const completedLogs = progress.completedDevlogs.filter((id) => DEVLOGS.some((log) => log.id === id)).length;
+  const reset = () => Alert.alert('Reset local progress?', 'This clears XP, reading history, badges, and the study streak on this device.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Reset', style: 'destructive', onPress: () => resetAction() }]);
 
-  const totalChapters = CHAPTERS.length;
-  const completedChapters = progress.completedChapters.length;
-  const checkpointsCompleted = Math.floor(completedChapters / 8);
+  return <ScreenContainer containerClassName="bg-background"><View style={styles.header}><Text style={styles.headerTitle}>&gt;_ FIELD PROFILE</Text><Text style={styles.headerSub}>LOCAL PROGRESS · NO ACCOUNT REQUIRED</Text></View><ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.levelCard}><View style={styles.levelTop}><View style={styles.levelBadge}><Text style={styles.levelBadgeText}>L{currentLevel.level}</Text></View><View style={{ flex: 1 }}><Text style={styles.levelName}>{currentLevel.name.toUpperCase()}</Text><Text style={styles.totalXp}>{progress.xp}/{ROOT_ACCESS_XP} XP</Text></View></View><View style={styles.track}><View style={[styles.fill, { width: `${xpProgress * 100}%` as any }]} /></View><Text style={styles.levelNote}>{rootAccessUnlocked ? 'Root Access requirements complete.' : `Root Access requires all ${rootAccessProgress.total} source modules and devlogs.`}</Text></View>
 
-  const handleReset = () => {
-    Alert.alert(
-      'RESET PROGRESS',
-      'This will delete all XP, completed chapters, and badges. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'RESET', style: 'destructive', onPress: () => resetAction() },
-      ]
-    );
-  };
+    <Text style={styles.section}>&gt; ROOT ACCESS GATE</Text><View style={[styles.rootCard, rootAccessUnlocked && styles.rootUnlocked]}><Text style={styles.rootIcon}>{rootAccessUnlocked ? '🔓' : '🔒'}</Text><View style={{ flex: 1 }}><Text style={[styles.rootTitle, rootAccessUnlocked && { color: C.primary }]}>{rootAccessUnlocked ? 'ROOT ACCESS UNLOCKED' : 'ROOT ACCESS LOCKED'}</Text><Text style={styles.rootCopy}>{rootAccessProgress.completed}/{rootAccessProgress.total} required readings completed · {rootAccessProgress.percent}%</Text><View style={styles.track}><View style={[styles.fill, { width: `${rootAccessProgress.percent}%` as any }]} /></View></View></View>
 
-  return (
-    <ScreenContainer containerClassName="bg-background">
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>&gt;_ USER PROFILE</Text>
-        <Text style={styles.headerSub}>SYSTEM ADMINISTRATOR</Text>
-      </View>
+    <Text style={styles.section}>&gt; ARCHIVE STATS</Text><View style={styles.stats}><Stat value={`${completedModules}/${CHAPTERS.length}`} label="MODULES" /><Stat value={`${completedLogs}/${DEVLOGS.length}`} label="DEVLOGS" /><Stat value={String(INFOGRAPHIC_COUNT)} label="VISUALS" /><Stat value={String(progress.streakCount)} label="DAY STREAK" /></View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Level Card */}
-        <View style={styles.levelCard}>
-          <View style={styles.levelTop}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelNum}>LVL {currentLevel.level}</Text>
-            </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={styles.levelName}>{currentLevel.name.toUpperCase()}</Text>
-              <Text style={styles.xpAmount}>{progress.xp} XP TOTAL</Text>
-            </View>
-          </View>
-          <View style={styles.xpTrack}>
-            <View style={[styles.xpFill, { width: `${xpProgress * 100}%` as any }]} />
-          </View>
-          <Text style={styles.xpNext}>
-            {currentLevel.maxXp - progress.xp} XP to {LEVELS[Math.min(currentLevel.level, LEVELS.length - 1)]?.name ?? 'MAX'}
-          </Text>
-        </View>
+    <Text style={styles.section}>&gt; LEVEL PATH</Text><View style={styles.levelList}>{LEVELS.map((level) => { const active = currentLevel.level === level.level; const unlocked = progress.xp >= level.minXp && (level.level !== 8 || rootAccessUnlocked); return <View key={level.level} style={styles.levelRow}><View style={[styles.dot, unlocked && styles.dotUnlocked, active && styles.dotActive]} /><View style={{ flex: 1 }}><Text style={[styles.levelRowName, unlocked && { color: C.text }, active && { color: C.primary }]}>{active ? '▶ ' : ''}{level.name}</Text><Text style={styles.levelRowXp}>{level.minXp} XP</Text></View>{unlocked && !active && <IconSymbol name="checkmark.circle.fill" size={16} color={C.primary} />}{active && <Text style={styles.current}>CURRENT</Text>}</View>; })}</View>
 
-        {/* Stats Grid */}
-        <Text style={styles.sectionTitle}>&gt; SYSTEM STATS</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{completedChapters}</Text>
-            <Text style={styles.statLabel}>CHAPTERS READ</Text>
-            <Text style={styles.statTotal}>/{totalChapters}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{checkpointsCompleted}</Text>
-            <Text style={styles.statLabel}>CHECKPOINTS</Text>
-            <Text style={styles.statTotal}>/6</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{progress.completedDevlogs.length}</Text>
-            <Text style={styles.statLabel}>DEVLOGS READ</Text>
-            <Text style={styles.statTotal}>/4</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: C.accent }]}>{progress.streakCount}</Text>
-            <Text style={styles.statLabel}>DAY STREAK</Text>
-            <Text style={styles.statTotal}>🔥</Text>
-          </View>
-        </View>
+    <Text style={styles.section}>&gt; BADGES</Text><View style={styles.badgeGrid}>{BADGES.map((badge) => { const earned = progress.earnedBadges.includes(badge.id); return <View key={badge.id} style={[styles.badge, !earned && styles.badgeLocked]}><Text style={styles.badgeIcon}>{badge.icon}</Text><Text style={styles.badgeName}>{earned ? badge.name : 'Locked'}</Text><Text style={styles.badgeDescription}>{earned ? badge.description : 'Keep reading to unlock.'}</Text></View>; })}</View>
 
-        {/* Level Roadmap */}
-        <Text style={styles.sectionTitle}>&gt; UPGRADE PATH</Text>
-        <View style={styles.levelRoadmap}>
-          {LEVELS.map((lvl) => {
-            const isUnlocked = progress.xp >= lvl.minXp;
-            const isCurrent = currentLevel.level === lvl.level;
-            return (
-              <View key={lvl.level} style={styles.levelRow}>
-                <View style={[styles.levelDot, isUnlocked && styles.levelDotUnlocked, isCurrent && styles.levelDotCurrent]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.levelRowName, isUnlocked && { color: C.text }, isCurrent && { color: C.primary }]}>
-                    {isCurrent ? '▶ ' : ''}{lvl.name}
-                  </Text>
-                  <Text style={styles.levelRowXP}>{lvl.minXp} XP</Text>
-                </View>
-                {isUnlocked && !isCurrent && <IconSymbol name="checkmark.circle.fill" size={16} color={C.primary} />}
-                {isCurrent && <View style={styles.currentBadge}><Text style={styles.currentBadgeText}>CURRENT</Text></View>}
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Badges */}
-        <Text style={styles.sectionTitle}>&gt; EARNED BADGES</Text>
-        <View style={styles.badgesGrid}>
-          {BADGES.map(badge => {
-            const earned = progress.earnedBadges.includes(badge.id);
-            return (
-              <View key={badge.id} style={[styles.badgeCard, !earned && styles.badgeCardLocked]}>
-                <Text style={[styles.badgeIcon, !earned && { opacity: 0.3 }]}>{badge.icon}</Text>
-                <Text style={[styles.badgeName, !earned && { color: C.muted }]}>{badge.name}</Text>
-                <Text style={styles.badgeDesc}>{earned ? badge.description : '???'}</Text>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Reset */}
-        <Pressable style={({ pressed }) => [styles.resetBtn, pressed && { opacity: 0.7 }]} onPress={handleReset}>
-          <IconSymbol name="arrow.clockwise" size={16} color={C.error} />
-          <Text style={styles.resetText}>RESET PROGRESS</Text>
-        </Pressable>
-
-        <View style={{ height: 32 }} />
-      </ScrollView>
-    </ScreenContainer>
-  );
+    <Pressable onPress={reset} style={({ pressed }) => [styles.reset, pressed && { opacity: 0.75 }]}><IconSymbol name="arrow.clockwise" size={16} color={C.error} /><Text style={styles.resetText}>RESET LOCAL PROGRESS</Text></Pressable>
+  </ScrollView></ScreenContainer>;
 }
 
+function Stat({ value, label }: { value: string; label: string }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
+
 const styles = StyleSheet.create({
-  header: { padding: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.border },
-  headerTitle: { color: C.primary, fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', letterSpacing: 1, marginBottom: 4 },
-  headerSub: { color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  scroll: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { padding: 16 },
-  levelCard: { backgroundColor: C.surface, borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: C.primary + '44' },
-  levelTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  levelBadge: { width: 56, height: 56, borderRadius: 28, backgroundColor: C.primary + '22', borderWidth: 2, borderColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  levelNum: { color: C.primary, fontSize: 14, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700' },
-  levelName: { color: C.primary, fontSize: 16, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
-  xpAmount: { color: C.secondary, fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  xpTrack: { height: 8, backgroundColor: C.surface2, borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
-  xpFill: { height: '100%', backgroundColor: C.primary, borderRadius: 4 },
-  xpNext: { color: C.muted, fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  sectionTitle: { color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 1, marginBottom: 10 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  statCard: { backgroundColor: C.surface, borderRadius: 12, padding: 14, width: '47%', borderWidth: 1, borderColor: C.border, alignItems: 'center' },
-  statValue: { color: C.primary, fontSize: 28, fontWeight: '700', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  statLabel: { color: C.muted, fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 0.5, marginTop: 4 },
-  statTotal: { color: C.muted, fontSize: 12, marginTop: 2 },
-  levelRoadmap: { backgroundColor: C.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: C.border, gap: 12 },
-  levelRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  levelDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.border },
-  levelDotUnlocked: { backgroundColor: C.primary + '66' },
-  levelDotCurrent: { backgroundColor: C.primary, width: 14, height: 14, borderRadius: 7 },
-  levelRowName: { color: C.muted, fontSize: 13, fontWeight: '600', marginBottom: 2 },
-  levelRowXP: { color: C.muted, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  currentBadge: { backgroundColor: C.primary + '22', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: C.primary },
-  currentBadgeText: { color: C.primary, fontSize: 9, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700' },
-  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  badgeCard: { backgroundColor: C.surface, borderRadius: 12, padding: 14, width: '47%', borderWidth: 1, borderColor: C.primary + '44', alignItems: 'center' },
-  badgeCardLocked: { borderColor: C.border, opacity: 0.7 },
-  badgeIcon: { fontSize: 28, marginBottom: 8 },
-  badgeName: { color: C.text, fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: 4 },
-  badgeDesc: { color: C.muted, fontSize: 11, textAlign: 'center', lineHeight: 15 },
-  resetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#F87171' + '44' },
-  resetText: { color: '#F87171', fontSize: 13, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700' },
+  header: { padding: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: C.border }, headerTitle: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', fontSize: 13, letterSpacing: 0.8, marginBottom: 4 }, headerSub: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10 }, scroll: { flex: 1, backgroundColor: C.bg }, content: { padding: 16, paddingBottom: 42 },
+  levelCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: `${C.primary}55`, borderRadius: 14, padding: 17, marginBottom: 20 }, levelTop: { flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 14 }, levelBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: `${C.primary}22`, borderWidth: 2, borderColor: C.primary, alignItems: 'center', justifyContent: 'center' }, levelBadgeText: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: '700', fontSize: 15 }, levelName: { color: C.primary, fontSize: 17, fontWeight: '700', marginBottom: 4 }, totalXp: { color: C.secondary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 12 }, track: { height: 7, backgroundColor: C.surface2, borderRadius: 4, overflow: 'hidden', marginTop: 7 }, fill: { height: '100%', backgroundColor: C.primary, borderRadius: 4 }, levelNote: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 9 },
+  section: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 11, letterSpacing: 1, marginBottom: 9 }, rootCard: { flexDirection: 'row', gap: 12, alignItems: 'center', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, marginBottom: 20 }, rootUnlocked: { borderColor: `${C.primary}77` }, rootIcon: { fontSize: 26 }, rootTitle: { color: C.accent, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }, rootCopy: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }, stat: { width: '47%', alignItems: 'center', padding: 14, borderRadius: 11, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface }, statValue: { color: C.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 19, fontWeight: '700' }, statLabel: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 9, marginTop: 5, letterSpacing: 0.5 },
+  levelList: { backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, padding: 14, gap: 12, marginBottom: 20 }, levelRow: { flexDirection: 'row', alignItems: 'center', gap: 11 }, dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.border }, dotUnlocked: { backgroundColor: `${C.primary}88` }, dotActive: { backgroundColor: C.primary, width: 14, height: 14, borderRadius: 7 }, levelRowName: { color: C.muted, fontSize: 13, fontWeight: '600', marginBottom: 2 }, levelRowXp: { color: C.muted, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 10 }, current: { color: C.primary, borderColor: C.primary, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 8, fontWeight: '700' },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 }, badge: { width: '47%', backgroundColor: C.surface, borderWidth: 1, borderColor: `${C.primary}44`, borderRadius: 11, padding: 13, alignItems: 'center' }, badgeLocked: { opacity: 0.5, borderColor: C.border }, badgeIcon: { fontSize: 25, marginBottom: 7 }, badgeName: { color: C.text, fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: 4 }, badgeDescription: { color: C.muted, fontSize: 10, lineHeight: 15, textAlign: 'center' }, reset: { flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: `${C.error}66`, padding: 14, borderRadius: 10 }, resetText: { color: C.error, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontSize: 12, fontWeight: '700' },
 });

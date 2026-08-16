@@ -27,7 +27,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function EntryModal({ entry, onClose }: { entry: LexiconEntry; onClose: () => void }) {
-  const color = CATEGORY_COLORS[entry.category || 'Core System'] ?? C.primary;
+  const color = CATEGORY_COLORS[entry.category] ?? C.primary;
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
@@ -79,7 +79,7 @@ export default function LexiconScreen() {
   };
 
   const renderItem = ({ item }: { item: LexiconEntry }) => {
-    const color = CATEGORY_COLORS[item.category || 'Core System'] ?? C.primary;
+    const color = CATEGORY_COLORS[item.category] ?? C.primary;
     const isViewed = progress.viewedLexicon.includes(item.id);
     return (
       <Pressable

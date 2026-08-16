@@ -1,7 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getLevelForXP, BADGES, CHAPTERS } from './tps-data';
 
+import {
+  BADGES,
+  CHAPTERS,
+  DEVLOGS,
+  LEXICON,
+  ROOT_ACCESS_XP,
+  ROOT_REQUIRED_DEVLOG_IDS,
+  ROOT_REQUIRED_MODULE_IDS,
+  getLevelForXP,
+  type Level,
+} from './tps-data';
+
+const CONTENT_VERSION = 'mythos-source-v1';
 const KEYS = {
+  VERSION: 'mythos_content_version',
   XP: 'tps_xp',
   COMPLETED_CHAPTERS: 'tps_completed_chapters',
   COMPLETED_DEVLOGS: 'tps_completed_devlogs',
@@ -23,149 +36,135 @@ export interface ProgressState {
   streakDate: string;
 }
 
+export const EMPTY_PROGRESS: ProgressState = {
+  xp: 0, completedChapters: [], completedDevlogs: [], viewedLexicon: [], earnedBadges: [], onboarded: false, streakCount: 0, streakDate: '',
+};
+
+function knownIds(ids: string[], source: readonly { id: string }[]): string[] {
+  const allowed = new Set(source.map((item) => item.id));
+  return [...new Set(ids.filter((id) => allowed.has(id)))];
+}
+
+async function persist(state: ProgressState): Promise<void> {
+  await AsyncStorage.multiSet([
+    [KEYS.VERSION, CONTENT_VERSION], [KEYS.XP, String(state.xp)], [KEYS.COMPLETED_CHAPTERS, JSON.stringify(state.completedChapters)], [KEYS.COMPLETED_DEVLOGS, JSON.stringify(state.completedDevlogs)], [KEYS.VIEWED_LEXICON, JSON.stringify(state.viewedLexicon)], [KEYS.BADGES, JSON.stringify(state.earnedBadges)], [KEYS.ONBOARDED, String(state.onboarded)], [KEYS.STREAK_DATE, state.streakDate], [KEYS.STREAK_COUNT, String(state.streakCount)],
+  ]);
+}
+
 export async function loadProgress(): Promise<ProgressState> {
   try {
-    const [xpRaw, chapRaw, logRaw, lexRaw, badgeRaw, onboardedRaw, streakDateRaw, streakCountRaw] =
-      await AsyncStorage.multiGet([
-        KEYS.XP, KEYS.COMPLETED_CHAPTERS, KEYS.COMPLETED_DEVLOGS,
-        KEYS.VIEWED_LEXICON, KEYS.BADGES, KEYS.ONBOARDED,
-        KEYS.STREAK_DATE, KEYS.STREAK_COUNT,
-      ]);
-
+    const values = await AsyncStorage.multiGet(Object.values(KEYS));
+    const data = Object.fromEntries(values);
+    if (data[KEYS.VERSION] !== CONTENT_VERSION) {
+      const migrated = { ...EMPTY_PROGRESS, onboarded: data[KEYS.ONBOARDED] === 'true' };
+      await persist(migrated);
+      return migrated;
+    }
     return {
-      xp: xpRaw[1] ? parseInt(xpRaw[1]) : 0,
-      completedChapters: chapRaw[1] ? JSON.parse(chapRaw[1]) : [],
-      completedDevlogs: logRaw[1] ? JSON.parse(logRaw[1]) : [],
-      viewedLexicon: lexRaw[1] ? JSON.parse(lexRaw[1]) : [],
-      earnedBadges: badgeRaw[1] ? JSON.parse(badgeRaw[1]) : [],
-      onboarded: onboardedRaw[1] === 'true',
-      streakDate: streakDateRaw[1] ?? '',
-      streakCount: streakCountRaw[1] ? parseInt(streakCountRaw[1]) : 0,
+      xp: Number.parseInt(data[KEYS.XP] || '0', 10) || 0,
+      completedChapters: knownIds(JSON.parse(data[KEYS.COMPLETED_CHAPTERS] || '[]'), CHAPTERS),
+      completedDevlogs: knownIds(JSON.parse(data[KEYS.COMPLETED_DEVLOGS] || '[]'), DEVLOGS),
+      viewedLexicon: knownIds(JSON.parse(data[KEYS.VIEWED_LEXICON] || '[]'), LEXICON),
+      earnedBadges: knownIds(JSON.parse(data[KEYS.BADGES] || '[]'), BADGES),
+      onboarded: data[KEYS.ONBOARDED] === 'true',
+      streakDate: data[KEYS.STREAK_DATE] || '',
+      streakCount: Number.parseInt(data[KEYS.STREAK_COUNT] || '0', 10) || 0,
     };
   } catch {
-    return {
-      xp: 0, completedChapters: [], completedDevlogs: [],
-      viewedLexicon: [], earnedBadges: [], onboarded: false,
-      streakDate: '', streakCount: 0,
-    };
+    return EMPTY_PROGRESS;
   }
 }
 
-export async function saveXP(xp: number): Promise<void> {
-  await AsyncStorage.setItem(KEYS.XP, String(xp));
-}
-
-export async function completeChapter(chapterId: string, currentState: ProgressState): Promise<ProgressState> {
-  if (currentState.completedChapters.includes(chapterId)) return currentState;
-
-  const chapter = CHAPTERS.find(c => c.id === chapterId);
-  const xpGain = chapter?.xpReward ?? 50;
-  const newXP = currentState.xp + xpGain;
-  const newCompleted = [...currentState.completedChapters, chapterId];
-
-  // Check for new badges
-  const newBadges = [...currentState.earnedBadges];
-  const checkpointBadgeMap: Record<number, string> = {
-    1: 'badge-01', 2: 'badge-02', 3: 'badge-03',
-    4: 'badge-04', 5: 'badge-05', 6: 'badge-06',
-  };
-  // Badge awarding based on part completion
-  const updatedChapters = [...currentState.completedChapters, chapterId];
-  const partChapters = CHAPTERS.filter(c => c.part === chapter?.part);
-  const partCompleted = partChapters.every(c => updatedChapters.includes(c.id));
-  if (partCompleted && chapter) {
-    const badgeId = `ch0${chapter.part + 1}`;
-    if (!newBadges.includes(badgeId)) newBadges.push(badgeId);
-  }
-
-  // Update streak
+function updateStreak(state: ProgressState): Pick<ProgressState, 'streakDate' | 'streakCount'> {
   const today = new Date().toDateString();
-  let newStreakCount = currentState.streakCount;
-  let newStreakDate = currentState.streakDate;
-  if (currentState.streakDate !== today) {
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    newStreakCount = currentState.streakDate === yesterday ? currentState.streakCount + 1 : 1;
-    newStreakDate = today;
+  if (state.streakDate === today) return { streakDate: state.streakDate, streakCount: state.streakCount };
+  const yesterday = new Date(Date.now() - 86_400_000).toDateString();
+  return { streakDate: today, streakCount: state.streakDate === yesterday ? state.streakCount + 1 : 1 };
+}
+
+function hasEvery(ids: readonly string[], completed: string[]): boolean {
+  return ids.every((id) => completed.includes(id));
+}
+
+export function isRootAccessUnlocked(progress: ProgressState): boolean {
+  return hasEvery(ROOT_REQUIRED_MODULE_IDS, progress.completedChapters) && hasEvery(ROOT_REQUIRED_DEVLOG_IDS, progress.completedDevlogs);
+}
+
+export function getRootAccessProgress(progress: ProgressState) {
+  const completed = ROOT_REQUIRED_MODULE_IDS.filter((id) => progress.completedChapters.includes(id)).length
+    + ROOT_REQUIRED_DEVLOG_IDS.filter((id) => progress.completedDevlogs.includes(id)).length;
+  const total = ROOT_REQUIRED_MODULE_IDS.length + ROOT_REQUIRED_DEVLOG_IDS.length;
+  return { completed, total, percent: total ? Math.round((completed / total) * 100) : 0 };
+}
+
+export function getEffectiveLevel(progress: ProgressState): Level {
+  const nominal = getLevelForXP(progress.xp);
+  if (nominal.level === 8 && !isRootAccessUnlocked(progress)) {
+    return getLevelForXP(Math.max(0, ROOT_ACCESS_XP - 1));
   }
+  return nominal;
+}
 
-  await AsyncStorage.multiSet([
-    [KEYS.XP, String(newXP)],
-    [KEYS.COMPLETED_CHAPTERS, JSON.stringify(newCompleted)],
-    [KEYS.BADGES, JSON.stringify(newBadges)],
-    [KEYS.STREAK_DATE, newStreakDate],
-    [KEYS.STREAK_COUNT, String(newStreakCount)],
-  ]);
+function evaluateBadges(state: ProgressState): string[] {
+  const badges = new Set(state.earnedBadges);
+  const groupBadge: Record<number, string> = { 0: 'core', 4: 'codex', 5: 'reference', 6: 'research' };
+  for (const [partString, badge] of Object.entries(groupBadge)) {
+    const part = Number(partString);
+    const source = CHAPTERS.filter((chapter) => chapter.part === part);
+    if (source.length && source.every((chapter) => state.completedChapters.includes(chapter.id))) badges.add(badge);
+  }
+  if (DEVLOGS.every((devlog) => state.completedDevlogs.includes(devlog.id))) badges.add('devlogs');
+  if (state.viewedLexicon.length >= 50) badges.add('lexicon');
+  if (state.streakCount >= 7) badges.add('streak');
+  if (isRootAccessUnlocked(state) && state.xp >= ROOT_ACCESS_XP) badges.add('root');
+  return [...badges];
+}
 
-  return {
-    ...currentState,
-    xp: newXP,
-    completedChapters: newCompleted,
-    earnedBadges: newBadges,
-    streakCount: newStreakCount,
-    streakDate: newStreakDate,
+export async function completeChapter(chapterId: string, current: ProgressState): Promise<ProgressState> {
+  const chapter = CHAPTERS.find((item) => item.id === chapterId);
+  if (!chapter || current.completedChapters.includes(chapterId) || !isChapterUnlocked(chapterId, current.completedChapters)) return current;
+  const streak = updateStreak(current);
+  const state: ProgressState = {
+    ...current,
+    xp: current.xp + chapter.xpReward,
+    completedChapters: [...current.completedChapters, chapterId],
+    ...streak,
   };
+  state.earnedBadges = evaluateBadges(state);
+  await persist(state);
+  return state;
 }
 
-export async function completeDevlog(devlogId: string, currentState: ProgressState): Promise<ProgressState> {
-  if (currentState.completedDevlogs.includes(devlogId)) return currentState;
-
-  const newCompleted = [...currentState.completedDevlogs, devlogId];
-  const newXP = currentState.xp + 25;
-  const newBadges = [...currentState.earnedBadges];
-
-  // Badge for reading all devlogs
-  if (newCompleted.length >= 4 && !newBadges.includes('badge-08')) {
-    newBadges.push('badge-08');
-  }
-
-  await AsyncStorage.multiSet([
-    [KEYS.COMPLETED_DEVLOGS, JSON.stringify(newCompleted)],
-    [KEYS.XP, String(newXP)],
-    [KEYS.BADGES, JSON.stringify(newBadges)],
-  ]);
-
-  return { ...currentState, completedDevlogs: newCompleted, xp: newXP, earnedBadges: newBadges };
-}
-
-export async function viewLexiconEntry(entryId: string, currentState: ProgressState): Promise<ProgressState> {
-  if (currentState.viewedLexicon.includes(entryId)) return currentState;
-
-  const newViewed = [...currentState.viewedLexicon, entryId];
-  const newBadges = [...currentState.earnedBadges];
-
-  if (newViewed.length >= 30 && !newBadges.includes('badge-07')) {
-    newBadges.push('badge-07');
-  }
-
-  await AsyncStorage.multiSet([
-    [KEYS.VIEWED_LEXICON, JSON.stringify(newViewed)],
-    [KEYS.BADGES, JSON.stringify(newBadges)],
-  ]);
-
-  return { ...currentState, viewedLexicon: newViewed, earnedBadges: newBadges };
-}
-
-export async function setOnboarded(): Promise<void> {
-  await AsyncStorage.setItem(KEYS.ONBOARDED, 'true');
-}
-
-export async function resetProgress(): Promise<ProgressState> {
-  await AsyncStorage.multiRemove(Object.values(KEYS));
-  return {
-    xp: 0, completedChapters: [], completedDevlogs: [],
-    viewedLexicon: [], earnedBadges: [], onboarded: false,
-    streakDate: '', streakCount: 0,
+export async function completeDevlog(devlogId: string, current: ProgressState): Promise<ProgressState> {
+  const devlog = DEVLOGS.find((item) => item.id === devlogId);
+  if (!devlog || current.completedDevlogs.includes(devlogId)) return current;
+  const streak = updateStreak(current);
+  const state: ProgressState = {
+    ...current,
+    xp: current.xp + devlog.xpReward,
+    completedDevlogs: [...current.completedDevlogs, devlogId],
+    ...streak,
   };
+  state.earnedBadges = evaluateBadges(state);
+  await persist(state);
+  return state;
 }
 
-export function getProgressPercent(completedChapters: string[]): number {
-  return Math.round((completedChapters.length / CHAPTERS.length) * 100);
+export async function viewLexiconEntry(entryId: string, current: ProgressState): Promise<ProgressState> {
+  if (!LEXICON.some((entry) => entry.id === entryId) || current.viewedLexicon.includes(entryId)) return current;
+  const state: ProgressState = { ...current, viewedLexicon: [...current.viewedLexicon, entryId] };
+  state.earnedBadges = evaluateBadges(state);
+  await persist(state);
+  return state;
 }
 
-export function isChapterUnlocked(chapterId: string, completedChapters: string[]): boolean {
-  const idx = CHAPTERS.findIndex(c => c.id === chapterId);
-  if (idx === 0) return true;
-  // Each chapter unlocks when the previous one is completed
-  const prev = CHAPTERS[idx - 1];
-  return completedChapters.includes(prev.id);
+export async function setOnboarded(): Promise<void> { await AsyncStorage.setItem(KEYS.ONBOARDED, 'true'); }
+
+export async function resetProgress(): Promise<ProgressState> { await AsyncStorage.multiRemove(Object.values(KEYS)); return EMPTY_PROGRESS; }
+
+export function getProgressPercent(completed: string[]): number { return CHAPTERS.length ? Math.round((knownIds(completed, CHAPTERS).length / CHAPTERS.length) * 100) : 0; }
+
+export function isChapterUnlocked(chapterId: string, completed: string[]): boolean {
+  const index = CHAPTERS.findIndex((chapter) => chapter.id === chapterId);
+  return index === 0 || (index > 0 && completed.includes(CHAPTERS[index - 1].id));
 }

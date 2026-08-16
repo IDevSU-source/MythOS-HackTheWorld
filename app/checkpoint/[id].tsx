@@ -82,7 +82,7 @@ export default function CheckpointScreen() {
   const { progress } = useProgress();
 
   const chapter = CHAPTERS.find(c => c.id === id);
-  const cpNum = chapter ? Math.floor(CHAPTERS.indexOf(chapter) / 8) + 1 : 1;
+  const cpNum = chapter ? Math.min(6, Math.floor(CHAPTERS.indexOf(chapter) / 8) + 1) : 1;
   const cpData = CHECKPOINT_DATA[cpNum - 1];
 
   const scale = useRef(new Animated.Value(0.8)).current;
@@ -96,7 +96,7 @@ export default function CheckpointScreen() {
       Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 10 }),
       Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [opacity, scale]);
 
   // Find the badge for this checkpoint
   const badgeId = `badge-0${cpNum}`;
