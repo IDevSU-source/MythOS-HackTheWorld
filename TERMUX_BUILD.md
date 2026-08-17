@@ -14,6 +14,8 @@ pkg update -y && pkg install -y curl && curl -fsSL https://raw.githubusercontent
 
 The first run installs Ubuntu proot, Node, Java, and project dependencies. It will ask you to authenticate to Expo once in that proot environment. The script explicitly creates or links the build under the **idevsu** Expo account; set `MYTHOS_EXPO_ACCOUNT=another-account-name` before the command only if you deliberately want a different owner. The default **preview** profile produces an installable APK.
 
+The same command is safe to rerun after a failed or interrupted step. It reuses an installed Ubuntu container, refreshes the source, repairs interrupted Debian package setup, reuses the saved EAS project link, restores the existing signing key from the Termux backup when needed, and never silently replaces a partial or mismatched signing key.
+
 ## Google Play build: AAB
 
 After successfully testing the APK, paste this command instead:
@@ -26,6 +28,6 @@ The production profile produces an Android App Bundle (`.aab`) for the Google Pl
 
 ## Signing-key backup
 
-After the first run, the script creates `~/MythOS-signing-backup` in Termux and copies the upload keystore plus its password file there. Back up that entire folder to secure storage before uploading anything to Play. Every later update for the same Android package must use the same upload key.
+After the first run, the script creates `~/MythOS-signing-backup` in Termux and copies the upload keystore plus its password file there. Back up that entire folder to secure storage before uploading anything to Play. Every later update for the same Android package must use the same upload key. If the script reports an incomplete or mismatched signing state, stop and restore that folder—do not delete it and do not create a replacement key.
 
 > Do not commit `credentials.json`, the keystore, or the signing folder to GitHub. The repository ignores those files by default.

@@ -38,10 +38,13 @@ const env = {
   androidPackage: bundleId,
 };
 
+const easProjectId = process.env.MYTHOS_EAS_PROJECT_ID;
+
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
   owner: "idevsu",
+  extra: easProjectId ? { eas: { projectId: easProjectId } } : {},
   version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
