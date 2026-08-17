@@ -51,7 +51,7 @@ SECRETS_DIR="${WORKSPACE}/signing"
 KEYSTORE="${SECRETS_DIR}/mythos-upload.jks"
 PASSWORD_FILE="${SECRETS_DIR}/keystore-password.txt"
 PROJECT_ID_FILE="${STATE_DIR}/eas-project-id.txt"
-INIT_DIR="${STATE_DIR}/eas-init"
+EAS_INIT_LOG="${STATE_DIR}/eas-init.log"
 TERMUX_BACKUP_DIR="/termux-home/MythOS-signing-backup"
 BACKUP_KEYSTORE="${TERMUX_BACKUP_DIR}/mythos-upload.jks"
 BACKUP_PASSWORD_FILE="${TERMUX_BACKUP_DIR}/keystore-password.txt"
@@ -159,33 +159,27 @@ if ! npx --yes eas-cli@latest whoami >/dev/null 2>&1; then
   npx --yes eas-cli@latest login
 fi
 
-# Initialize EAS in a tiny static config, then pass its project ID into the
-# dynamic MythOS app config through MYTHOS_EAS_PROJECT_ID. This avoids the
-# "cannot automatically write to dynamic config" failure on first run.
+# Initialize from the actual MythOS directory so EAS recognizes the Expo project.
+# The project ID is captured outside source control and injected into the dynamic
+# app config through MYTHOS_EAS_PROJECT_ID for this and all future builds.
 if [ -s "${PROJECT_ID_FILE}" ]; then
   export MYTHOS_EAS_PROJECT_ID="$(cat "${PROJECT_ID_FILE}")"
   echo "==> Reusing the saved EAS project link for @${EXPO_ACCOUNT}."
 else
   echo "==> Creating or linking the EAS project under @${EXPO_ACCOUNT}..."
-  mkdir -p "${INIT_DIR}"
-  cat > "${INIT_DIR}/app.json" <<EOF
-{
-  "expo": {
-    "name": "MythOS: Hack the World",
-    "slug": "tps-app",
-    "owner": "${EXPO_ACCOUNT}",
-    "android": { "package": "com.idevsu.mythos" }
-  }
-}
-EOF
-  (
-    cd "${INIT_DIR}"
-    npx --yes eas-cli@latest init --account "${EXPO_ACCOUNT}" --force --non-interactive
-  )
-  PROJECT_ID="$(node -e "const c=require('${INIT_DIR}/app.json'); process.stdout.write(c.expo?.extra?.eas?.projectId || '')")"
-  [ -n "${PROJECT_ID}" ] || fatal "EAS did not return a project ID. Run the same script again; do not create another key."
+  set +e
+  npx --yes eas-cli@latest init --account "${EXPO_ACCOUNT}" --force --json --non-interactive 2>&1 | tee "${EAS_INIT_LOG}"
+  EAS_INIT_STATUS="${PIPESTATUS[0]}"
+  set -e
+  PROJECT_ID="$(grep -Eo '[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,}' "${EAS_INIT_LOG}" | tail -n 1 || true)"
+  if [ -z "${PROJECT_ID}" ]; then
+    git checkout -- app.config.ts 2>/dev/null || true
+    fatal "EAS did not return a project ID. The log is saved at ${EAS_INIT_LOG}; rerun the same script without creating a new signing key."
+  fi
   printf '%s' "${PROJECT_ID}" > "${PROJECT_ID_FILE}"
   export MYTHOS_EAS_PROJECT_ID="${PROJECT_ID}"
+  git checkout -- app.config.ts 2>/dev/null || true
+  [ "${EAS_INIT_STATUS}" -eq 0 ] || echo "==> EAS project ID recovered despite its dynamic-config write warning. Continuing safely."
 fi
 
 echo "==> Starting ${PROFILE} build with the local MythOS signing key..."
