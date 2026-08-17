@@ -24,23 +24,17 @@ echo "==> Checking Termux prerequisites..."
 pkg update -y
 pkg install -y proot-distro curl git openssl
 
-container_is_installed() {
-  proot-distro list 2>/dev/null \
-    | sed -n '/Installed distributions:/,$p' \
-    | grep -Eq "^[[:space:]]*\*?[[:space:]]*${DISTRO}([[:space:]]|$)"
-}
-
-if ! container_is_installed; then
-  echo "==> Installing the Ubuntu proot image (first run only)..."
-  if ! proot-distro install "${DISTRO}"; then
-    container_is_installed || {
-      echo "ERROR: Ubuntu proot installation did not complete. Run the same command again after checking your network connection."
-      exit 1
-    }
-    echo "==> Ubuntu was installed while this script was checking. Reusing it."
-  fi
-else
+# Attempting the install is the only reliable cross-version check. A container
+# that already exists returns a known nonfatal result; all other failures stop.
+echo "==> Ensuring the Ubuntu proot image is available..."
+if INSTALL_OUTPUT="$(proot-distro install "${DISTRO}" 2>&1)"; then
+  echo "==> Ubuntu proot image installed."
+elif printf '%s' "${INSTALL_OUTPUT}" | grep -qiE "container .* already exists|already installed"; then
   echo "==> Reusing the existing Ubuntu proot container."
+else
+  printf '%s\n' "${INSTALL_OUTPUT}" >&2
+  echo "ERROR: Ubuntu proot could not be installed or reused. Check network/storage, then rerun the same command." >&2
+  exit 1
 fi
 
 cat > "${PAYLOAD}" <<'PROOT_PAYLOAD'
